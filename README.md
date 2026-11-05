@@ -268,7 +268,7 @@ Clean visuals matter for presentations and photos.
 
 An earlier idea, kept as an optional advanced module:
 
-A **buyer agent** negotiates the price of an NVIDIA GPU quoted at $20,000, with a target of $14,000–$17,000 and a walk-away floor. The guardrails apply to the buyer agent's behavior.
+A **buyer agent** negotiates the price of an NVIDIA GPU quoted at $20,000, with a target of $14,000–$17,000 and a walk-away floor. The guardrails apply to the buyer agent's behavior. The buyer and a simulated **seller agent** are built as a **CrewAI** crew, each with its own role, goals, and tools. The guard pipeline around them stays in LangGraph.
 
 Teach these points through this module:
 
@@ -291,7 +291,8 @@ This module is a good "level 11" for advanced participants, and a clear example 
 | Slides | **Slidev** | Markdown-based slides with code highlighting and good themes. |
 | Diagrams | **Excalidraw / Mermaid** | Quick architecture and flow diagrams. |
 | Backend API | **FastAPI** (Python) | Hosts the guard agents and streams replies to the front end. |
-| Agent orchestration | **LangGraph** | Stateful multi-step flows, such as the negotiation and tool loops. |
+| Core agent orchestration | **LangGraph** | Deterministic pipeline for the guard: rails, tool gates, authorization, and output checks as explicit graph nodes. |
+| Multi-agent crews | **CrewAI** | Role-based agents for the attacker crew (red-team mode) and the negotiation module (buyer and seller). |
 | Guardrails | **NVIDIA NeMo Guardrails** | Input, output, and dialog rails in Colang. |
 | Observability | **Langfuse** (self-hosted with Docker) | Traces, spans, scores, and dashboards. |
 | Data | **PostgreSQL** (or SQLite for a simple start) | Teams, levels, attempts, and scores. |
@@ -326,6 +327,7 @@ Chainlit is a good Python chat framework. We chose a dedicated web front end ins
             │  ┌──────────────────────┐  │
             │  │ Guard agent          │  │
             │  │ (LangGraph + Claude) │  │
+            │  │ CrewAI attacker crew │  │
             │  └──────────┬───────────┘  │
             │             │ tool calls   │
             │  ┌──────────▼───────────┐  │
@@ -366,6 +368,7 @@ Agent_Guardrails_Monitoring/
 ├── backend/                    # FastAPI + agents
 │   ├── api/                    # chat and scoreboard endpoints
 │   ├── agents/                 # guard agent (LangGraph graph)
+│   ├── crews/                  # CrewAI crews: attacker (red team), negotiation
 │   ├── levels/                 # one folder per level (config + rails)
 │   │   ├── level_00_tutorial/
 │   │   ├── level_01_open_door/
