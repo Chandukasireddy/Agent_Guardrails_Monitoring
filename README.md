@@ -1,5 +1,8 @@
 # Agent Guardrails & Monitoring — "Vault Heist" Workshop
 
+> **Break it. Understand why. Build it stronger.**
+> A hands-on Sunday-meetup workshop on AI guardrails, authorization, and observability, played as a CTF-style heist.
+
 A hands-on, Sunday-meetup workshop where people learn **AI guardrails, authorization, and observability** by trying to break them.
 
 Participants are given a chatbot that guards a vault of **fake, dummy secrets**. Each level adds a new guardrail. Their job is to get past it, understand why it failed, and then build a better one.
@@ -10,7 +13,7 @@ This repository is a **template**: the finished levels and the monitoring setup 
 
 ## Table of Contents
 
-1. [Why this exists](#why-this-exists)
+1. [Why this workshop exists](#why-this-workshop-exists)
 2. [Who it is for](#who-it-is-for)
 3. [The big idea: Vault Heist](#the-big-idea-vault-heist)
 4. [Levels](#levels)
@@ -18,16 +21,21 @@ This repository is a **template**: the finished levels and the monitoring setup 
 6. [Guardrails and defenses](#guardrails-and-defenses)
 7. [Authorization and identity](#authorization-and-identity)
 8. [Monitoring and observability](#monitoring-and-observability)
-9. [Making it fun](#making-it-fun)
-10. [Making it learnable](#making-it-learnable)
-11. [Making it look good on screen](#making-it-look-good-on-screen)
-12. [Game mechanics: scoring, teams, bingo](#game-mechanics-scoring-teams-bingo)
+9. [Fun factor](#fun-factor)
+10. [Learning design](#learning-design)
+11. [Visual design for screens and photos](#visual-design-for-screens-and-photos)
+12. [Scoring, teams, and bingo](#scoring-teams-and-bingo)
 13. [Bonus module: negotiation agent](#bonus-module-negotiation-agent)
 14. [Tech stack](#tech-stack)
 15. [Architecture](#architecture)
 16. [Repository layout](#repository-layout)
-17. [Getting started](#getting-started)
-18. [Workshop-day plan](#workshop-day-plan)
+17. [GitHub setup](#github-setup)
+18. [Getting started](#getting-started)
+19. [Workshop-day plan](#workshop-day-plan)
+20. [Safety rules for the sandbox](#safety-rules-for-the-sandbox)
+21. [Content and slides](#content-and-slides)
+22. [Roadmap](#roadmap)
+23. [Open questions](#open-questions)
 19. [Safety rules for the sandbox](#safety-rules-for-the-sandbox)
 20. [Content and slides](#content-and-slides)
 21. [Roadmap](#roadmap)
@@ -35,7 +43,7 @@ This repository is a **template**: the finished levels and the monitoring setup 
 
 ---
 
-## Why this exists
+## Why this workshop exists
 
 Most people hear "AI guardrails" and imagine a magic filter. In practice:
 
@@ -196,7 +204,7 @@ Teach these concepts with the dashboard:
 
 ---
 
-## Making it fun
+## Fun factor
 
 - **Characters:** each guard has a name, a voice, and a funny refusal. Examples: "Sir Blocksalot the Dragon", "Nervous Ned from Accounts", "Captain Cat".
 - **Sound and motion:** a green "ACCESS GRANTED" animation when a level is cleared, a red alarm when a rail fires, and a shaking screen when the guard almost leaks.
@@ -208,7 +216,7 @@ Teach these concepts with the dashboard:
 
 ---
 
-## Making it learnable
+## Learning design
 
 - **Attack cards:** after each level, a card shows the attack class, a plain-English explanation, and the matching defense.
 - **Pipeline view:** the request flows through boxes (input rail, model, output rail, tool), and each box lights up when it runs or blocks.
@@ -219,7 +227,7 @@ Teach these concepts with the dashboard:
 
 ---
 
-## Making it look good on screen
+## Visual design for screens and photos
 
 Clean visuals matter for presentations and photos.
 
@@ -232,7 +240,7 @@ Clean visuals matter for presentations and photos.
 
 ---
 
-## Game mechanics: scoring, teams, bingo
+## Scoring, teams, and bingo
 
 ### Scoring
 
@@ -381,6 +389,56 @@ Agent_Guardrails_Monitoring/
 ├── slides/                     # Slidev presentation for each Sunday
 │
 └── tests/                      # tests that each level's rails hold
+```
+
+---
+
+## GitHub setup
+
+The project is developed with the GitHub CLI (`gh`). Use it for creating the repository, pushing code, tracking issues, and managing workshop feedback.
+
+### One-time setup
+
+```bash
+gh auth login          # choose GitHub.com, HTTPS, and log in through the browser
+gh auth status         # confirm the active account and the repo scope
+```
+
+### Create and push the repository
+
+Run these from the project folder once the first commit is ready:
+
+```bash
+git init -b main
+git add .
+git commit -m "Initial workshop template"
+gh repo create Agent_Guardrails_Monitoring --public --source=. --remote=origin --push
+```
+
+Use `--private` instead of `--public` while the vault contents are still being written.
+
+### Everyday workflow
+
+```bash
+gh issue create --title "Level 3 bypass found" --body "Steps to reproduce..."
+gh pr create --fill
+gh pr list
+gh repo view --web
+```
+
+### Branch and naming conventions
+
+- `main` is always playable.
+- `level/<number>-<name>` for new levels, for example `level/03-keyword-bouncer`.
+- `rail/<name>` for new guardrails.
+- `workshop/<date>` for content tied to a specific Sunday.
+
+### Keep secrets out of git
+
+`.env` is git-ignored. Check that it is never staged:
+
+```bash
+git check-ignore -v .env
 ```
 
 ---
