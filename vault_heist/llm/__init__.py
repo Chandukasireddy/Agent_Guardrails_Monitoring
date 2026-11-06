@@ -10,7 +10,8 @@ import logging
 import os
 
 from ..config import LLMSettings
-from . import anthropic_provider, mock_provider, ollama_provider  # noqa: F401 - registers providers
+from . import anthropic_provider, mock_provider, nvidia_provider, ollama_provider  # noqa: F401 - registers providers
+from .nvidia_provider import NvidiaProvider
 from .base import PROVIDERS, LLMError, LLMProvider, LLMReply, ToolCall, ToolSpec
 
 log = logging.getLogger(__name__)
@@ -23,6 +24,8 @@ def make_provider(settings: LLMSettings) -> LLMProvider:
     if choice == "auto":
         if os.environ.get("ANTHROPIC_API_KEY"):
             choice = "anthropic"
+        elif NvidiaProvider.available(settings):
+            choice = "nvidia"
         elif ollama_provider.OllamaProvider.available(settings):
             choice = "ollama"
         else:

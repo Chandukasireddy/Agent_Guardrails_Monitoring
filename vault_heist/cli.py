@@ -61,6 +61,7 @@ def cmd_doctor(_: argparse.Namespace) -> None:
         except metadata.PackageNotFoundError:
             print(f"{ok(False)}{pkg:<16}not installed (optional)" if pkg in ("langfuse", "nemoguardrails", "crewai") else f"!! {pkg} missing")
     print(f"{ok(bool(os.environ.get('ANTHROPIC_API_KEY')))}ANTHROPIC_API_KEY {'set' if os.environ.get('ANTHROPIC_API_KEY') else 'not set'}")
+    print(f"{ok(bool(os.environ.get('NVIDIA_API_KEY')))}NVIDIA_API_KEY {'set' if os.environ.get('NVIDIA_API_KEY') else 'not set'} (model={s.llm.nvidia_model}, limit {s.llm.nvidia_rpm}/min)")
     print(f"{ok(OllamaProvider.available(s.llm))}Ollama        {s.llm.ollama_url} model={s.llm.ollama_model}")
     print(f"{ok(bool(os.environ.get('LANGFUSE_PUBLIC_KEY')))}Langfuse      {'keys set' if os.environ.get('LANGFUSE_PUBLIC_KEY') else 'not configured (local traces only)'}")
     for kind in ("rails", "tools"):

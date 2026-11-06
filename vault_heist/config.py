@@ -28,11 +28,17 @@ load_dotenv(ROOT / ".env")
 
 
 class LLMSettings(BaseModel):
-    provider: str = "auto"  # auto | anthropic | ollama | mock
+    provider: str = "auto"  # auto | anthropic | nvidia | ollama | mock
     anthropic_model: str = "claude-opus-5-5"
     anthropic_judge_model: str = "claude-haiku-5-5"
     anthropic_effort: str = "low"
     anthropic_fallbacks: bool = True
+    nvidia_model: str = "nvidia/nemotron-3.5-bolt-e4b"
+    price_input_per_million: float = 0.0   # USD per 1M input tokens; 0 = do not record cost
+    price_output_per_million: float = 0.0  # USD per 1M output tokens
+    nvidia_url: str = "https://integrate.api.nvidia.com/v1"
+    nvidia_rpm: int = 40  # the free endpoint's limit per key; shared by the whole room
+    nvidia_thinking: bool = False  # True asks the model to reason first (slower, more tokens)
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2"
     max_tokens: int = 16000
@@ -65,6 +71,10 @@ ENV_OVERRIDES: dict[str, tuple[str, ...]] = {
     "ANTHROPIC_MODEL": ("llm", "anthropic_model"),
     "ANTHROPIC_JUDGE_MODEL": ("llm", "anthropic_judge_model"),
     "ANTHROPIC_EFFORT": ("llm", "anthropic_effort"),
+    "NVIDIA_MODEL": ("llm", "nvidia_model"),
+    "NVIDIA_RPM": ("llm", "nvidia_rpm"),
+    "LLM_PRICE_INPUT_PER_M": ("llm", "price_input_per_million"),
+    "LLM_PRICE_OUTPUT_PER_M": ("llm", "price_output_per_million"),
     "OLLAMA_URL": ("llm", "ollama_url"),
     "OLLAMA_MODEL": ("llm", "ollama_model"),
     "PROGRESSIVE_UNLOCK": ("game", "progressive_unlock"),
@@ -127,6 +137,7 @@ class Level(BaseModel):
     output_rails: list[RailSpec] = Field(default_factory=list)
     tool_rails: list[RailSpec] = Field(default_factory=list)
     hints: list[str] = Field(default_factory=list)
+    starters: list[str] = Field(default_factory=list)  # example messages shown to a new visitor
     lesson: Lesson = Field(default_factory=Lesson)
     settings: dict[str, Any] = Field(default_factory=dict)
     source: str = ""
