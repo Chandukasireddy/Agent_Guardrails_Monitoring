@@ -20,7 +20,6 @@ def _banner(url: str, pin: str, provider: str) -> None:
     print(
         f"\n{line}\n  TOKEN VAULT is running\n{line}\n"
         f"  Game:        {url}\n"
-        f"  Scoreboard:  {url}/scoreboard\n"
         f"  Host panel:  {url}/host   (PIN: {pin})\n"
         f"  Guard model: {provider}\n"
         f"{line}\n  Press Ctrl+C to stop.\n",
