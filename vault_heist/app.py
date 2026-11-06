@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from . import __version__
 from .config import (
+    CHALLENGES_DIR,
     CONFIG_DIR,
     DATA_DIR,
     EXTENSIONS_DIR,
@@ -90,7 +91,7 @@ class GameState:
 
     # -- levels -----------------------------------------------------------
     def _stamp(self) -> float:
-        files = list((CONFIG_DIR / "levels").glob("*.yaml")) + list((EXTENSIONS_DIR / "levels").glob("*.yaml"))
+        files = list(CHALLENGES_DIR.glob("*.yaml"))
         return max((f.stat().st_mtime for f in files), default=0.0) + len(files)
 
     def levels(self) -> dict[str, Level]:
@@ -190,7 +191,7 @@ def create_app(
         yield
         state.tracer.flush()
 
-    app = FastAPI(title="Vault Heist", version=__version__, lifespan=lifespan)
+    app = FastAPI(title="Token Vault", version=__version__, lifespan=lifespan)
     app.state.game = state
 
     # -- auth helpers -----------------------------------------------------

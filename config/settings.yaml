@@ -1,4 +1,4 @@
-# Vault Heist settings. Every value here can also be set in .env (see .env.example).
+# Token Vault settings. Every value here can also be set in .env (see .env.example).
 
 host: 127.0.0.1        # use 0.0.0.0 to let other laptops on the network join
 port: 8000
@@ -18,7 +18,7 @@ llm:
   timeout_seconds: 60
 
 game:
-  progressive_unlock: true   # each level unlocks after the previous one is solved
+  progressive_unlock: false  # true: each challenge unlocks after the previous one is solved
   max_tool_rounds: 3         # tool calls the guard may make per message
   max_message_chars: 2000
   rate_limit_per_minute: 20  # per player, protects the API budget

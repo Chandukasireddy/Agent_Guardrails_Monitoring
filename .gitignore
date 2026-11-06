@@ -8,8 +8,6 @@ data/*
 *.egg-info/
 dist/
 build/
-/secrets/
-!workshop/.env
 
 # Personal Claude Code settings and design-tool caches, never committed
 /.claude/settings.local.json
@@ -19,6 +17,7 @@ build/
 /archive/
 /docs/screenshots/
 /.impeccable/
-/.claude/skills/
-/.claude/agents/
 /.claude/launch.json
+
+# Prebuilt Impeccable launcher binary (about 20 MB, downloaded or rebuilt locally)
+/.claude/skills/impeccable/scripts/bin/

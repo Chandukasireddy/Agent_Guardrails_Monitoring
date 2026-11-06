@@ -12,13 +12,13 @@ import threading
 import webbrowser
 from importlib import metadata
 
-from .config import CONFIG_DIR, EXTENSIONS_DIR, get_settings, load_levels
+from .config import CHALLENGES_DIR, CONFIG_DIR, EXTENSIONS_DIR, get_settings, load_levels
 
 
 def _banner(url: str, pin: str, provider: str) -> None:
     line = "=" * 64
     print(
-        f"\n{line}\n  VAULT HEIST is running\n{line}\n"
+        f"\n{line}\n  TOKEN VAULT is running\n{line}\n"
         f"  Game:        {url}\n"
         f"  Scoreboard:  {url}/scoreboard\n"
         f"  Host panel:  {url}/host   (PIN: {pin})\n"
@@ -134,17 +134,17 @@ def cmd_new_rail(args: argparse.Namespace) -> None:
 
 def cmd_new_level(args: argparse.Namespace) -> None:
     slug = re.sub(r"[^a-z0-9_]", "_", args.name.lower())
-    path = EXTENSIONS_DIR / "levels" / f"{slug}.yaml"
+    path = CHALLENGES_DIR / f"{slug}.yaml"
     if path.exists():
         raise SystemExit(f"{path} already exists.")
-    template = (CONFIG_DIR / "levels" / "_TEMPLATE.yaml").read_text(encoding="utf-8")
+    template = (CHALLENGES_DIR / "_TEMPLATE.yaml").read_text(encoding="utf-8")
     path.write_text(template.replace("my_level", slug), encoding="utf-8")
-    print(f"Created {path}\nEdit it, then refresh the game. Levels reload automatically.")
+    print(f"Created {path}\nEdit it, then refresh the game. Challenges reload automatically.")
 
 
 def main(argv: list[str] | None = None) -> None:
     logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"), format="%(levelname)s %(name)s: %(message)s")
-    parser = argparse.ArgumentParser(prog="vault-heist", description="Vault Heist: break AI guardrails, learn why.")
+    parser = argparse.ArgumentParser(prog="vault-heist", description="Token Vault: break AI guardrails, learn why.")
     sub = parser.add_subparsers(dest="command")
 
     p = sub.add_parser("serve", help="start the game (default)")

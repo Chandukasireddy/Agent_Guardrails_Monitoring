@@ -1,6 +1,6 @@
-"""Workshop tools: a read-only file reader and a customer lookup.
+"""Sandbox tools: a read-only file reader and a customer lookup.
 
-Both read real files in ``workshop/`` (fake data only). The ``authz`` of the challenge decides
+Both read real files in ``sandbox/`` (fake data only). The ``authz`` of the challenge decides
 what the tool allows, exactly like the vault tools: the check lives in code, not in the prompt.
 """
 
@@ -13,12 +13,12 @@ from typing import Any
 from ..registry import Registry  # noqa: F401 - keeps import order stable
 from .base import TOOLS, Tool, ToolContext
 
-WORKSHOP = (Path(__file__).resolve().parents[2] / "workshop").resolve()
+SANDBOX = (Path(__file__).resolve().parents[2] / "sandbox").resolve()
 
 
 def _inside_workshop(path: Path) -> bool:
     try:
-        path.relative_to(WORKSHOP)
+        path.relative_to(SANDBOX)
         return True
     except ValueError:
         return False
@@ -35,11 +35,11 @@ class ReadFile(Tool):
 
     def run(self, args: dict[str, Any], ctx: ToolContext) -> str:
         raw = str(args.get("path", "")).strip()
-        target = (WORKSHOP / raw).resolve()
+        target = (SANDBOX / raw).resolve()
         if not _inside_workshop(target):
             return "DENIED: that path is outside the workshop folder."
         if ctx.level.authz == "policies_only":
-            if target.relative_to(WORKSHOP).parts[:1] != ("policies",):
+            if target.relative_to(SANDBOX).parts[:1] != ("policies",):
                 return "DENIED: this desk only reads files under policies/."
         if not target.is_file():
             return f"ERROR: no file called {raw}."
@@ -59,7 +59,7 @@ class CustomerLookup(Tool):
     }
 
     def run(self, args: dict[str, Any], ctx: ToolContext) -> str:
-        records = json.loads((WORKSHOP / "customers" / "records.json").read_text(encoding="utf-8"))
+        records = json.loads((SANDBOX / "customers" / "records.json").read_text(encoding="utf-8"))
         wanted = str(args.get("customer_id", "")).strip()
         for rec in records:
             if rec["id"] == wanted:

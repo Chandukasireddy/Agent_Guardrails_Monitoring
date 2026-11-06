@@ -19,6 +19,8 @@ from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
+CHALLENGES_DIR = ROOT / "challenges"
+SANDBOX_DIR = ROOT / "sandbox"
 EXTENSIONS_DIR = ROOT / "extensions"
 WEB_DIR = ROOT / "web"
 DATA_DIR = ROOT / "data"
@@ -46,7 +48,7 @@ class LLMSettings(BaseModel):
 
 
 class GameSettings(BaseModel):
-    progressive_unlock: bool = True
+    progressive_unlock: bool = False
     max_tool_rounds: int = 3
     max_message_chars: int = 2000
     rate_limit_per_minute: int = 20
@@ -155,8 +157,7 @@ class Level(BaseModel):
 
 
 def _level_files() -> list[Path]:
-    files = sorted((CONFIG_DIR / "levels").glob("*.yaml"))
-    files += sorted((EXTENSIONS_DIR / "levels").glob("*.yaml"))
+    files = sorted(CHALLENGES_DIR.glob("*.yaml"))
     return [f for f in files if not f.name.startswith("_")]
 
 

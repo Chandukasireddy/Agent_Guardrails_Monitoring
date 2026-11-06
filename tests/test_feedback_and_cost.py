@@ -41,7 +41,7 @@ def test_feedback_on_someone_elses_reply_is_refused(client, player):
 
 
 def test_guard_cannot_reach_the_real_project_env():
-    from vault_heist.tools.workshop import ReadFile, WORKSHOP
+    from vault_heist.tools.sandbox import ReadFile
     from vault_heist.tools.base import ToolContext
     from vault_heist.config import Level
 
@@ -49,4 +49,4 @@ def test_guard_cannot_reach_the_real_project_env():
     ctx = ToolContext(level=level, player={}, store=None)
     assert "DENIED" in ReadFile().run({"path": "../.env"}, ctx)
     assert "DENIED" in ReadFile().run({"path": "../../.env"}, ctx)
-    assert "FAKE-NV-KEY-7F3A" in ReadFile().run({"path": ".env"}, ctx)
+    assert "FAKE-NV-KEY-7F3A" in ReadFile().run({"path": "desk/config.txt"}, ctx)

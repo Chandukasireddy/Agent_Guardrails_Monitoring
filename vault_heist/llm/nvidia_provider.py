@@ -11,7 +11,6 @@ import json
 import logging
 import os
 import uuid
-from pathlib import Path
 from typing import Any
 
 import httpx
@@ -25,16 +24,9 @@ log = logging.getLogger(__name__)
 MAX_REPLY_TOKENS = 1024  # guard replies are short; keeps each call quick
 
 
-KEY_FILE = Path(__file__).resolve().parents[2] / "secrets" / "nvidia_api_key.txt"
-
-
 def _load_key() -> str:
-    """The key lives in a file outside the prompt. The environment variable is the fallback."""
-    env_key = os.environ.get("NVIDIA_API_KEY", "").strip()
-    if env_key:
-        return env_key
-    path = Path(os.environ.get("NVIDIA_API_KEY_FILE", "") or KEY_FILE)
-    return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
+    """The key comes from NVIDIA_API_KEY in .env (git-ignored). It never goes in a prompt."""
+    return os.environ.get("NVIDIA_API_KEY", "").strip()
 
 
 @PROVIDERS.register("nvidia")
@@ -44,7 +36,7 @@ class NvidiaProvider(LLMProvider):
     def __init__(self, settings: LLMSettings) -> None:
         key = _load_key()
         if not key:
-            raise LLMError("No NVIDIA key found. Put it in secrets/nvidia_api_key.txt or set NVIDIA_API_KEY in .env.")
+            raise LLMError("No NVIDIA key found. Set NVIDIA_API_KEY in your .env file.")
         self._key = key
         self.settings = settings
         self.model = settings.nvidia_model
