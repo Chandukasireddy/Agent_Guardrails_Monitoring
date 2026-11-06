@@ -38,65 +38,69 @@ pass and red for block, with the reason under the station that blocked.
 ```
 guardrails/
 ├── README.md              this guide
-├── __init__.py            the public names: RAILS, Rail, RailContext, Verdict, run_stage
-├── base.py                the contract: what a check gets, what it returns, and the registry
-├── runner.py              runs one stage of checks and records each step
-├── text.py                helpers the checks share: normalising and decoding text
-├── checks/                built-in checks, one file per check
-│   ├── __init__.py        imports every check so it registers
-│   ├── length.py          length_limit
-│   ├── keywords.py        keyword_block
-│   ├── injection.py       injection_heuristic
-│   ├── pressure.py        pressure_detector
-│   ├── secret_scan.py     secret_scanner (output)
-│   ├── judge.py           llm_judge (asks a second model)
-│   ├── tool_checks.py     tool_allowlist, arg_guard (tools)
-│   ├── topic.py           topic_scope (input)
-│   └── pii.py             pii_redactor (output)
-├── adapters/              connections to outside frameworks
-│   ├── __init__.py
-│   ├── nemo.py            nemo (NVIDIA NeMo Guardrails, optional)
-│   └── nemo_config/       the NeMo flows and prompts used by that adapter
-└── custom/                YOUR checks: every .py file here loads at startup
-    ├── __init__.py
-    └── example_script_detector.py
+├── base.py, runner.py     the contract, and the code that runs one stage of checks
+├── text.py                helpers the checks share
+├── checks/                the check code: one file per check type (written once)
+├── adapters/              connections to outside frameworks (NeMo)
+├── custom/                your own checks, loaded at startup
+│
+├── key_vault/             the guardrails of challenge 1
+├── policy_desk/           the guardrails of challenge 2
+├── poisoned_ticket/       the guardrails of challenge 3
+├── roleplay_override/     the guardrails of challenge 4
+└── customer_records/      the guardrails of challenge 5
 ```
+
+Each challenge folder has two files:
+
+- `guardrails.yaml`: the checks for that challenge, one entry each, with a label and a one-line explanation.
+- `README.md`: what to notice about those checks.
+
+The check **code** lives once, in `checks/`. A challenge folder only says which checks it uses, and with what settings.
 
 ## Which check runs where
 
 | Check | Stage | What it does, in plain words | Used by |
 |---|---|---|---|
 | `topic_scope` | input | Blocks messages that don't mention an allowed topic. | Policy Desk |
-| `keyword_block` | input | Blocks messages that contain a word from a list. | (available) |
+| `keyword_block` | input | Blocks messages that contain a word from a list. | (not used yet) |
 | `injection_heuristic` | input | Blocks phrases like "ignore previous instructions". | Roleplay Override |
 | `pressure_detector` | input | Blocks urgency and "I am the admin" style pressure. | Roleplay Override |
-| `length_limit` | input | Blocks very long messages. | (available) |
-| `llm_judge` | input or output | Asks a second model a yes-or-no question. | (available) |
-| `nemo` | input or output | Runs a NeMo Guardrails flow, if installed. | (available) |
-| `secret_scanner` | output | Blocks a reply that contains the secret, optionally after decoding. | (available) |
+| `length_limit` | input | Blocks very long messages. | (not used yet) |
+| `llm_judge` | input or output | Asks a second model a yes-or-no question. | (not used yet) |
+| `nemo` | input or output | Runs a NeMo Guardrails flow, if installed. | (not used yet) |
+| `secret_scanner` | output | Blocks a reply that contains the secret, optionally after decoding. | (not used yet) |
 | `pii_redactor` | output | Blocks a reply that contains an email address or phone number. | Customer Records |
-| `tool_allowlist` | tool | Only lets the guard call tools on a list. | (available) |
-| `arg_guard` | tool | Blocks tool arguments that match a deny pattern. | (available) |
+| `tool_allowlist` | tool | Only lets the guard call tools on a list. | (not used yet) |
+| `arg_guard` | tool | Blocks tool arguments that match a deny pattern. | (not used yet) |
 
-"(available)" means the check exists and can be added to any challenge in its YAML file.
+"(not used yet)" means the check exists and can be added to any challenge in its YAML file.
 
 ## How a challenge uses checks
 
-Challenges live in `challenges/`. Each one lists the checks for each stage, with optional settings:
+A challenge points at its folder. For example, `challenges/02_policy_desk.yaml` contains:
 
 ```yaml
-input_rails:            # stage 1: runs on the visitor's message
-  - name: topic_scope
-    params:
-      topics: [policy, return, refund]
-output_rails:           # stage 4: runs on the model's reply
-  - name: pii_redactor
-tool_rails:             # stage 3: runs on each tool call
-  - name: arg_guard
-    params: {tools: [read_file], deny: ["\\.\\."]}
+guardrails: guardrails/policy_desk/guardrails.yaml
 ```
 
-The key names (`input_rails`, `output_rails`, `tool_rails`) say *when* a check runs. The `name` says *which* check.
+And `guardrails/policy_desk/guardrails.yaml` contains:
+
+```yaml
+input:
+  - name: topic_scope
+    label: code
+    explain: "Refuses any message that does not mention a returns-policy topic."
+    params:
+      topics: ["policy", "return", "refund", "shipping", "exchange", "warranty"]
+tool: []
+output: []
+```
+
+- `input`, `tool` and `output` say *when* a check runs.
+- `name` says *which* check code runs (see `checks/`).
+- `label` says who decides: `code` (a Python rule), `model` (another AI model) or `prompt` (the guard's own instructions).
+- `explain` is shown in the UI and in the Langfuse span name.
 
 ## How a check is written
 
@@ -130,7 +134,7 @@ class ProfanityFilter(Rail):
 uv run vault-heist new-rail profanity_filter     # creates guardrails/custom/profanity_filter.py
 ```
 
-Edit the file, then restart the game. Add the check to a challenge's YAML under the right stage.
+Edit the file, then restart the game. Add the check to the challenge's `guardrails.yaml` under the right stage.
 A file in `guardrails/custom/` that has a mistake is logged and skipped; the game keeps running.
 
 ## Built-in checks in more detail
