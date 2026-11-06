@@ -5,7 +5,7 @@ import base64
 from vault_heist.config import Level, RailSpec
 from vault_heist.game.store import Store
 from vault_heist.llm.mock_provider import MockProvider
-from vault_heist.rails import RAILS, RailContext
+from guardrails import RAILS, RailContext
 from vault_heist.tools import TOOLS, ToolContext
 
 LEVEL = Level(id="t", order=0, title="t", secret="FAKE-ABC-123", system_prompt="x", settings={})
@@ -85,3 +85,34 @@ def test_rail_registry_lists_builtins():
     for name in ["keyword_block", "injection_heuristic", "pressure_detector", "secret_scanner", "llm_judge",
                  "tool_allowlist", "arg_guard", "length_limit", "nemo"]:
         assert name in RAILS
+
+
+def test_every_builtin_check_is_registered_and_documented():
+    expected = {
+        "length_limit", "keyword_block", "injection_heuristic", "pressure_detector", "secret_scanner",
+        "llm_judge", "tool_allowlist", "arg_guard", "topic_scope", "pii_redactor", "nemo",
+    }
+    assert expected <= set(RAILS.names())
+    for name in expected:
+        assert RAILS.get(name).description, f"{name} needs a one-line description for the UI"
+
+
+def test_stage_runner_stops_at_the_first_block(client):
+    from guardrails import run_stage
+    from vault_heist.config import RailSpec, load_levels
+    from vault_heist.crews.attacker import Sandbox
+
+    level = load_levels()["policy_desk"]
+    sb = Sandbox()
+    specs = [RailSpec(name="topic_scope", params={"topics": ["policy"]}), RailSpec(name="length_limit")]
+    with sb.tracer.turn(sb.player, level.id, "poem please") as trace:
+        result = run_stage("input", specs, text="poem please", level=level, player=sb.player,
+                           provider=sb.provider, trace=trace)
+    assert result.verdict is not None and not result.verdict.allowed
+    assert result.rail == "topic_scope"
+    assert [e["name"] for e in result.events] == ["topic_scope"]  # length_limit never ran
+
+
+def test_nemo_config_ships_with_the_adapter():
+    from vault_heist.config import ROOT
+    assert (ROOT / "guardrails" / "adapters" / "nemo_config" / "config.yml").is_file()

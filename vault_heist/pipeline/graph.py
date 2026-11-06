@@ -22,7 +22,7 @@ from langgraph.graph import END, START, StateGraph
 from ..config import GameSettings, Level, RailSpec
 from ..game.store import Store
 from ..llm import LLMError, LLMProvider, ToolCall
-from ..rails import RAILS, RailContext, Verdict
+from guardrails import Verdict, run_stage
 from ..config import get_settings
 from ..tools import TOOLS, ToolContext
 from ..tracing import Trace, cost_usd
@@ -98,34 +98,22 @@ class GuardPipeline:
     def _run_rails(
         self, state: TurnState, stage: str, specs: list[RailSpec], text: str, **tool: Any
     ) -> tuple[Verdict | None, str, list[dict[str, Any]], float]:
-        """Run rails in order. Returns (blocking verdict or None, rail name, events, max suspicion)."""
-        events: list[dict[str, Any]] = []
-        top = 0.0
-        for spec in specs:
-            ctx = RailContext(
-                stage=stage,
-                text=text,
-                level=state["level"],
-                player=state["player"],
-                provider=self.provider,
-                tool_name=tool.get("tool_name", ""),
-                tool_args=tool.get("tool_args", {}),
-            )
-            with state["trace"].span(f"{stage}_rail:{spec.name}", kind="guardrail", input=text, rail=spec.name) as span:
-                try:
-                    verdict = RAILS.get(spec.name)(**spec.params).check(ctx)
-                except Exception as exc:  # noqa: BLE001 - a broken rail fails closed
-                    log.exception("Rail %s crashed", spec.name)
-                    verdict = Verdict.block(f"Rail error: {exc}", 0.0)
-                status = "pass" if verdict.allowed else "block"
-                span.end(output=verdict.reason or "allowed", status=status, reason=verdict.reason)
-            top = max(top, verdict.suspicion)
-            events.append(
-                {"stage": stage, "name": spec.name, "status": status, "reason": verdict.reason, "ms": span.ms}
-            )
-            if not verdict.allowed:
-                return verdict, spec.name, events, top
-        return None, "", events, top
+        """Run one stage of guardrails (see ``guardrails/runner.py``).
+
+        Returns (blocking verdict or None, check name, events, max suspicion).
+        """
+        result = run_stage(
+            stage,
+            specs,
+            text=text,
+            level=state["level"],
+            player=state["player"],
+            provider=self.provider,
+            trace=state["trace"],
+            tool_name=tool.get("tool_name", ""),
+            tool_args=tool.get("tool_args", {}),
+        )
+        return result.verdict, result.rail, result.events, result.suspicion
 
     def _refusal(self, level: Level) -> str:
         return random.choice(level.character.refusals or ["Nope."])

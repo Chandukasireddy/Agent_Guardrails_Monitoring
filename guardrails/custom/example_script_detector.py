@@ -10,7 +10,7 @@ Use it in a level YAML:
         params: {max_ratio: 0.3}
 """
 
-from vault_heist.rails import RAILS, Rail, RailContext, Verdict
+from guardrails import RAILS, Rail, RailContext, Verdict
 
 
 @RAILS.register("script_detector")

@@ -12,7 +12,7 @@ import threading
 import webbrowser
 from importlib import metadata
 
-from .config import CHALLENGES_DIR, CONFIG_DIR, EXTENSIONS_DIR, get_settings, load_levels
+from .config import CHALLENGES_DIR, CONFIG_DIR, CUSTOM_CHECKS_DIR, EXTENSIONS_DIR, get_settings, load_levels
 
 
 def _banner(url: str, pin: str, provider: str) -> None:
@@ -48,7 +48,7 @@ def cmd_serve(args: argparse.Namespace) -> None:
 def cmd_doctor(_: argparse.Namespace) -> None:
     from .llm import make_provider
     from .llm.ollama_provider import OllamaProvider
-    from .rails import RAILS
+    from guardrails import RAILS
     from .registry import load_extension_modules
     from .tools import TOOLS
 
@@ -64,9 +64,9 @@ def cmd_doctor(_: argparse.Namespace) -> None:
     print(f"{ok(bool(os.environ.get('NVIDIA_API_KEY')))}NVIDIA_API_KEY {'set' if os.environ.get('NVIDIA_API_KEY') else 'not set'} (model={s.llm.nvidia_model}, limit {s.llm.nvidia_rpm}/min)")
     print(f"{ok(OllamaProvider.available(s.llm))}Ollama        {s.llm.ollama_url} model={s.llm.ollama_model}")
     print(f"{ok(bool(os.environ.get('LANGFUSE_PUBLIC_KEY')))}Langfuse      {'keys set' if os.environ.get('LANGFUSE_PUBLIC_KEY') else 'not configured (local traces only)'}")
-    for kind in ("rails", "tools"):
-        loaded = load_extension_modules(EXTENSIONS_DIR / kind)
-        print(f"OK Extensions  {kind}: {', '.join(loaded) or 'none'}")
+    for kind, folder in (("rails", CUSTOM_CHECKS_DIR), ("tools", EXTENSIONS_DIR / "tools")):
+        loaded = load_extension_modules(folder)
+        print(f"OK Custom {kind:<6} {', '.join(loaded) or 'none'}")
     print(f"OK Rails       {', '.join(RAILS.names())}")
     print(f"OK Tools       {', '.join(TOOLS.names())}")
     levels = load_levels()
@@ -105,7 +105,7 @@ Use it in a level YAML:
         params: {{words: ["example"]}}
 """
 
-from vault_heist.rails import RAILS, Rail, RailContext, Verdict
+from guardrails import RAILS, Rail, RailContext, Verdict
 
 
 @RAILS.register("{name}")
@@ -124,12 +124,12 @@ class {cls}(Rail):
 
 def cmd_new_rail(args: argparse.Namespace) -> None:
     name = re.sub(r"[^a-z0-9_]", "_", args.name.lower())
-    path = EXTENSIONS_DIR / "rails" / f"{name}.py"
+    path = CUSTOM_CHECKS_DIR / f"{name}.py"
     if path.exists():
         raise SystemExit(f"{path} already exists.")
     cls = "".join(p.title() for p in name.split("_"))
     path.write_text(RAIL_TEMPLATE.format(name=name, cls=cls, title=name.replace("_", " ").title()), encoding="utf-8")
-    print(f"Created {path}\nAdd it to a level under input_rails/output_rails/tool_rails, then refresh the game.")
+    print(f"Created {path}\nAdd it to a challenge under input_rails/output_rails/tool_rails, then refresh the game.")
 
 
 def cmd_new_level(args: argparse.Namespace) -> None:
@@ -166,11 +166,11 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--rounds", type=int, default=6)
     p.set_defaults(func=cmd_crew)
 
-    p = sub.add_parser("new-rail", help="create a custom guardrail in extensions/rails/")
+    p = sub.add_parser("new-rail", help="create a custom guardrail in guardrails/custom/")
     p.add_argument("name")
     p.set_defaults(func=cmd_new_rail)
 
-    p = sub.add_parser("new-level", help="create a new level in extensions/levels/")
+    p = sub.add_parser("new-level", help="create a new challenge in challenges/")
     p.add_argument("name")
     p.set_defaults(func=cmd_new_level)
 

@@ -22,6 +22,8 @@ CONFIG_DIR = ROOT / "config"
 CHALLENGES_DIR = ROOT / "challenges"
 SANDBOX_DIR = ROOT / "sandbox"
 EXTENSIONS_DIR = ROOT / "extensions"
+GUARDRAILS_DIR = ROOT / "guardrails"
+CUSTOM_CHECKS_DIR = GUARDRAILS_DIR / "custom"
 WEB_DIR = ROOT / "web"
 DATA_DIR = ROOT / "data"
 

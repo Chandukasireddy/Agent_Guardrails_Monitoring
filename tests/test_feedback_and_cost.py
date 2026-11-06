@@ -14,13 +14,13 @@ def test_no_price_means_no_cost_recorded():
 
 
 def test_demo_users_are_fixed_and_separate(client):
-    a = client.post("/api/demo/a").json()
-    again = client.post("/api/demo/A").json()
-    b = client.post("/api/demo/B").json()
+    a = client.post("/api/demo/admin").json()
+    again = client.post("/api/demo/Admin").json()
+    b = client.post("/api/demo/intern").json()
     assert a["token"] == again["token"]
     assert a["token"] != b["token"]
-    assert a["name"] == "User A"
-    assert client.post("/api/demo/Z").status_code == 404
+    assert a["name"] == "Admin"
+    assert client.post("/api/demo/stranger").status_code == 404
 
 
 def test_feedback_is_stored_for_own_reply(client, player):

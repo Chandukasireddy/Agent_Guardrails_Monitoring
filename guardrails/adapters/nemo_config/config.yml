@@ -3,7 +3,7 @@
 # Then add to a level:
 #   input_rails:
 #     - name: nemo
-#       params: {config_path: guardrails/nemo}
+#       params: {config_path: guardrails/adapters/nemo_config}
 #
 # NeMo needs its own model connection for self-check rails. Set the engine and
 # model to one you have access to; see the NeMo Guardrails docs for options.

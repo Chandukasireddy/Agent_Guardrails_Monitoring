@@ -41,7 +41,7 @@ authz: none
 
 # Guardrails, run in order. Built-ins: length_limit, keyword_block,
 # injection_heuristic, pressure_detector, secret_scanner, llm_judge,
-# tool_allowlist, arg_guard, nemo. Add your own in extensions/rails/.
+# tool_allowlist, arg_guard, nemo. Add your own in guardrails/custom/.
 input_rails:
   - name: injection_heuristic
 output_rails:

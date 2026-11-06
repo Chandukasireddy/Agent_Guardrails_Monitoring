@@ -13,7 +13,7 @@ from ..config import Level, get_settings, load_attack_library
 from ..game.store import Store
 from ..llm import LLMProvider, make_provider
 from ..pipeline import GuardPipeline
-from ..rails.text_utils import decoded_variants, normalize
+from guardrails.text import decoded_variants, normalize
 from ..tracing import Tracer
 
 

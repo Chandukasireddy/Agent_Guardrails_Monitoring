@@ -1,4 +1,4 @@
-"""Small text helpers shared by rails."""
+"""Text helpers shared by the checks: normalising and decoding tricks."""
 
 from __future__ import annotations
 

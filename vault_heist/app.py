@@ -20,6 +20,7 @@ from . import __version__
 from .config import (
     CHALLENGES_DIR,
     CONFIG_DIR,
+    CUSTOM_CHECKS_DIR,
     DATA_DIR,
     EXTENSIONS_DIR,
     WEB_DIR,
@@ -32,8 +33,8 @@ from .config import (
 from .game.store import Store
 from .llm import LLMProvider, make_provider
 from .pipeline import GuardPipeline
-from .rails import RAILS
-from .rails.text_utils import normalize
+from guardrails import RAILS
+from guardrails.text import normalize
 from .registry import load_extension_modules
 from .tools import TOOLS
 from .tracing import Tracer
@@ -45,6 +46,8 @@ class JoinBody(BaseModel):
     name: str
     team: str = "Solo"
 
+
+DEMO_USERS = ("admin", "intern", "customer")
 
 class ChatBody(BaseModel):
     message: str
@@ -74,7 +77,7 @@ class GameState:
     def __init__(self, settings: Settings, provider: LLMProvider | None, db_path: Path | str) -> None:
         self.settings = settings
         self.extensions = {
-            kind: load_extension_modules(EXTENSIONS_DIR / kind) for kind in ("rails", "tools")
+            kind: load_extension_modules(folder) for kind, folder in (("rails", CUSTOM_CHECKS_DIR), ("tools", EXTENSIONS_DIR / "tools"))
         }
         self.provider = provider or make_provider(settings.llm)
         self.store = Store(db_path)
@@ -237,13 +240,13 @@ def create_app(
             raise HTTPException(400, "Pick a name.")
         return state.store.create_player(body.name, body.team)
 
-    @app.post("/api/demo/{letter}")
-    def demo_user(letter: str) -> dict[str, Any]:
-        """Sign in as one of the three demo users (A, B, C). Same laptop, separate progress."""
-        letter = letter.strip().upper()
-        if letter not in ("A", "B", "C"):
-            raise HTTPException(404, "There are only users A, B and C.")
-        name = f"User {letter}"
+    @app.post("/api/demo/{user}")
+    def demo_user(user: str) -> dict[str, Any]:
+        """Sign in as one of the three demo users. Same laptop, separate progress."""
+        key = user.strip().lower()
+        if key not in DEMO_USERS:
+            raise HTTPException(404, "There are only three demo users: admin, intern and customer.")
+        name = key.capitalize()
         return state.store.find_player(name, "Demo") or state.store.create_player(name, "Demo")
 
     @app.get("/api/me")

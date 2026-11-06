@@ -1,4 +1,4 @@
-"""The guardrail contract.
+"""The guardrail contract: what a check receives, what it returns, and where checks register.
 
 A rail is a small class with one method, ``check(ctx) -> Verdict``. Register it
 with ``@RAILS.register("my_rail")`` and list it in a level's YAML under
@@ -11,11 +11,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from ..registry import Registry
+from vault_heist.registry import Registry
 
 if TYPE_CHECKING:
-    from ..config import Level
-    from ..llm import LLMProvider
+    from vault_heist.config import Level
+    from vault_heist.llm import LLMProvider
 
 
 @dataclass

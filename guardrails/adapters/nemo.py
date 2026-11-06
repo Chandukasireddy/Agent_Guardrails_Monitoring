@@ -4,7 +4,7 @@ Install with ``uv sync --extra nemo`` and add to a level:
 
     input_rails:
       - name: nemo
-        params: {config_path: guardrails/nemo}
+        params: {config_path: guardrails/adapters/nemo_config}
 
 The NeMo config decides whether the text is allowed. If NeMo is not
 installed, the rail reports that and lets the message through, so the game
@@ -17,8 +17,8 @@ import logging
 from functools import lru_cache
 from pathlib import Path
 
-from ..config import ROOT
-from .base import RAILS, Rail, RailContext, Verdict
+from vault_heist.config import ROOT
+from ..base import RAILS, Rail, RailContext, Verdict
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ def _load_rails(config_path: str):  # type: ignore[no-untyped-def]
 @RAILS.register("nemo")
 class NemoRail(Rail):
     description = "Runs NVIDIA NeMo Guardrails (Colang flows) on the text."
-    defaults = {"config_path": "guardrails/nemo", "refusal_marker": "I'm sorry, I can't"}
+    defaults = {"config_path": "guardrails/adapters/nemo_config", "refusal_marker": "I'm sorry, I can't"}
 
     def check(self, ctx: RailContext) -> Verdict:
         try:
