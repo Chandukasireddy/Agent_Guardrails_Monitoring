@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vault Heist</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>" />
+  <link rel="stylesheet" href="/static/css/theme.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo" id="logo"><span class="dial"></span> VAULT HEIST</div>
+    <span class="pill" id="provider-pill" title="The model behind the guards">🧠 <b id="provider">…</b></span>
+    <span class="pill hidden" id="langfuse-pill">📡 <b>Langfuse on</b></span>
+    <div class="spacer"></div>
+    <span class="pill hidden" id="player-pill">🕵️ <b id="player-name"></b> <span id="player-team"></span></span>
+    <span class="pill gold hidden" id="points-pill">⭐ <b id="points">0</b></span>
+    <button class="btn small" id="sound-btn" title="Sound on/off">🔊</button>
+    <a class="btn small" href="/scoreboard" target="_blank">🏆 Scoreboard</a>
+  </header>
+  <main id="view"></main>
+  <canvas id="confetti" class="hidden"></canvas>
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>

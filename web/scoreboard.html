@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vault Heist · Scoreboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>" />
+  <link rel="stylesheet" href="/static/css/theme.css" />
+</head>
+<body>
+  <main>
+    <div class="board">
+      <section>
+        <h1>🏆 VAULT HEIST</h1>
+        <div class="muted" style="margin-bottom:18px;font-size:18px">Live leaderboard · join at <span class="mono" id="join-url"></span></div>
+        <div id="ranks"></div>
+      </section>
+      <section>
+        <div class="stat-grid">
+          <div class="panel stat"><b id="s-attempts">0</b><span class="muted">attacks fired</span></div>
+          <div class="panel stat"><b id="s-blocked" style="color:var(--bad)">0</b><span class="muted">blocked by rails</span></div>
+          <div class="panel stat"><b id="s-rate">0%</b><span class="muted">block rate</span></div>
+        </div>
+        <div class="panel" style="margin-bottom:16px">
+          <h3>Teams</h3>
+          <div id="teams"></div>
+        </div>
+        <div class="panel">
+          <h3>Latest cracks</h3>
+          <div id="feed"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script type="module">
+    import { esc } from "/static/js/api.js";
+    document.getElementById("join-url").textContent = location.origin;
+    let last = "";
+    async function tick() {
+      try {
+        const raw = await (await fetch("/api/scoreboard")).text();
+        if (raw === last) return; // redraw only when something changed
+        last = raw;
+        const b = JSON.parse(raw);
+        const medal = ["🥇", "🥈", "🥉"];
+        document.getElementById("ranks").innerHTML = b.players.slice(0, 10).map((p, i) => `
+          <div class="rank">
+            <span class="pos">${medal[i] || i + 1}</span>
+            <span>${esc(p.name)} <div class="team">${esc(p.team)} · ${p.solved}/${b.levels} vaults</div></span>
+            <span class="pts">${p.points}</span>
+          </div>`).join("") || `<div class="muted" style="font-size:20px">Waiting for the first heist…</div>`;
+        document.getElementById("teams").innerHTML = b.teams.map((t) => `
+          <div class="feed-item" style="display:flex;justify-content:space-between"><span>${esc(t.team)} <span class="muted">(${t.members})</span></span><b class="mono" style="color:var(--gold)">${t.points}</b></div>`).join("");
+        document.getElementById("feed").innerHTML = b.recent.map((r) => `
+          <div class="feed-item">🔓 <b>${esc(r.name)}</b> <span class="muted">(${esc(r.team)})</span> cracked <b>${esc(r.level_title)}</b> <span style="color:var(--gold)">+${r.points}</span></div>`).join("") || `<div class="muted">No vaults cracked yet.</div>`;
+        const a = b.stats.attempts || 0, bl = b.stats.blocked || 0;
+        document.getElementById("s-attempts").textContent = a;
+        document.getElementById("s-blocked").textContent = bl;
+        document.getElementById("s-rate").textContent = a ? Math.round((bl / a) * 100) + "%" : "0%";
+      } catch { /* server restarting */ }
+    }
+    tick();
+    setInterval(tick, 3000);
+  </script>
+</body>
+</html>

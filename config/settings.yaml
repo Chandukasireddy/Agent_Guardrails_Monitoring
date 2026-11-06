@@ -1,0 +1,24 @@
+# Vault Heist settings. Every value here can also be set in .env (see .env.example).
+
+host: 127.0.0.1        # use 0.0.0.0 to let other laptops on the network join
+port: 8000
+open_browser: true
+host_pin: ""           # empty = a random PIN is printed at startup
+
+llm:
+  # auto: Claude if ANTHROPIC_API_KEY is set, else Ollama if running, else the offline mock guard
+  provider: auto       # auto | anthropic | ollama | mock
+  anthropic_model: claude-opus-5-5
+  anthropic_judge_model: claude-haiku-5-5   # used by the llm_judge rail
+  anthropic_effort: low                     # low | medium | high
+  anthropic_fallbacks: true                 # server-side fallback when a request is refused
+  ollama_url: http://localhost:11434
+  ollama_model: llama3.2
+  max_tokens: 16000
+  timeout_seconds: 60
+
+game:
+  progressive_unlock: true   # each level unlocks after the previous one is solved
+  max_tool_rounds: 3         # tool calls the guard may make per message
+  max_message_chars: 2000
+  rate_limit_per_minute: 20  # per player, protects the API budget

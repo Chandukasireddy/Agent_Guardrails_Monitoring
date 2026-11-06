@@ -2,26 +2,42 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Current state
+## Project
 
-The repository contains only `README.md` and no code yet. There is no build, lint, or test tooling, and no package manifests, so there are no commands to run. Do not invent them. When the scaffold is added, update this section with the real commands.
+"Vault Heist" is a CTF-style workshop game: players chat with LLM guards to extract fake secrets, and each level adds a guardrail. It is a Python package (`vault_heist/`) served by FastAPI, with a build-free web front end in `web/`. `README.md` describes the levels, the workshop format, and the user-facing setup.
 
-## Project intent
+## Commands
 
-This is a Sunday-workshop template: a CTF-style game called "Vault Heist" where participants try to get fake secrets out of an LLM guard, and each level adds one guardrail. The README is the source of truth for the level list, the attack and defense cards, and the scoring rules.
+Dependencies are managed with uv (`pyproject.toml`, `uv.lock`, Python 3.12 from `.python-version`).
 
-The planned architecture, as described in `README.md` and not yet built:
+```bash
+uv sync                                   # install (add --extra langfuse|nemo|crew or --all-extras)
+uv run vault-heist serve --no-browser     # run the game on http://localhost:8000
+uv run vault-heist doctor                 # check packages, keys, providers, levels
+uv run vault-heist attack -v              # fire config/attacks.yaml at every level
+uv run pytest                             # all tests
+uv run pytest -k gpu_bazaar               # one test (by name match)
+```
 
-- **Guard pipeline (LangGraph):** input rails, then the guard agent, then tool gates and authorization, then output rails. Authorization is deterministic code in `backend/vault/`. The model never holds a real secret.
-- **Guardrails (NVIDIA NeMo Guardrails):** input, output, dialog, and tool rails written in Colang under `guardrails/`.
-- **Multi-agent crews (CrewAI):** an attacker crew for red-team mode and a buyer and seller crew for the optional negotiation module, under `backend/crews/`. These stay separate from the core LangGraph pipeline.
-- **Observability (Langfuse, self-hosted via Docker):** every turn is traced, and each rail decision is a span.
-- **Front end (Next.js, TypeScript, Tailwind, shadcn/ui):** game UI with a React Flow pipeline view, under `web/`.
-- **Backend (FastAPI, Python):** streams replies to the front end, under `backend/`.
+`play.bat` / `play.sh` are the end-user one-click launchers (install uv, `uv sync`, copy `.env.example`, start). `setup.bat` is the install half for Windows. Batch files must keep CRLF line endings (`.gitattributes`). There is no linter configured.
 
-## Constraints to keep in mind
+Tests use the offline mock guard (`LLM_PROVIDER=mock` behaviour) and an in-memory database, so they need no API key or network.
 
-- All secrets in the vault are fake and labeled as fake. The shell challenge is simulated and must never run real commands.
-- The participant-facing sandbox must not reach real systems or real personal data.
-- Keep the guard's security decisions in code, not in prompts. A system prompt is not a security boundary, and the levels exist to show why.
-- The git remote is the public repo `Chandukasireddy/Agent_Guardrails_Monitoring`. Do not push changes without the user asking.
+## Architecture
+
+- **Request flow:** `app.py` `/api/levels/{id}/chat` → `Tracer.turn()` → `GuardPipeline.run()` in `pipeline/graph.py`. The LangGraph graph is `input_rails → guard → (tools → guard)* → output_rails`. Each node appends UI events (consumed by `web/js/views/play.js` to animate the pipeline) and opens a trace span.
+- **Plugins via registries** (`registry.py`): `RAILS` (`rails/base.py`), `TOOLS` (`tools/base.py`), `PROVIDERS` (`llm/base.py`). Levels reference rails and tools by registered name. Files in `extensions/rails` and `extensions/tools` are imported at startup; broken files are logged and skipped.
+- **Levels** are YAML in `config/levels/` and `extensions/levels/` (files starting with `_` are ignored), validated by the `Level` model in `config.py`, and reloaded automatically when files change. `system_prompt` supports `{secret}`, `{guard}`, `{vault_items}`.
+- **LLM providers** share a neutral message format (see `llm/base.py`). The Anthropic provider sends assistant `raw` content blocks back unchanged and folds tool results and follow-up user text into one user turn; keep conversation history append-only. `make_provider` falls back to the mock if a provider fails to start.
+- **Mock guard** (`llm/mock_provider.py`) finds the secret with the regex `FAKE-[A-Z0-9-]+` in the system prompt and reacts to attack keywords. Level solvability tests in `tests/test_levels.py` depend on its behaviour; changing it or a level's rails can break those solutions.
+- **Authorization lives in tools**, not prompts: `vault_read` implements the `authz` modes (`none`, `claimed_role`, `approval`, `session_role`); `make_offer` enforces price floors. The shell and file system are simulated in `tools/fakefs.py`.
+- **State:** `game/store.py` (SQLite at `data/vault_heist.db`: players, attempts, solves, approvals, host flags). Conversations, tripwire meters, and hint counts are in memory in `GameState`.
+- **Tracing** (`tracing/__init__.py`): always local (last 500 turns, plus `data/traces.jsonl`); mirrored to Langfuse only when `LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY` are set and the package is installed. Tracing errors must never break a turn.
+- **Settings:** `config/settings.yaml`, overridable by the env vars in `ENV_OVERRIDES` (`config.py`), loaded from `.env`.
+
+## Constraints
+
+- Every secret is fake and must start with `FAKE-`. The shell challenge must never execute real commands.
+- Keep the participant sandbox away from real systems and real personal data.
+- Teach that security decisions belong in code, not prompts; new levels should keep that lesson.
+- The git remote is the public repo `Chandukasireddy/Agent_Guardrails_Monitoring`. Do not push without the user asking.

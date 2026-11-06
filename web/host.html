@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vault Heist · Host</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>" />
+  <link rel="stylesheet" href="/static/css/theme.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo"><span class="dial"></span> VAULT HEIST · HOST</div>
+    <div class="spacer"></div>
+    <span class="pill">🧠 <b id="provider">…</b></span>
+    <a class="btn small" href="/scoreboard" target="_blank">🏆 Big screen</a>
+  </header>
+  <main>
+    <div class="panel join-card" id="login" style="margin:60px auto">
+      <h2>Host panel</h2>
+      <p class="muted">Enter the PIN printed in the terminal when the game started.</p>
+      <form id="pin-form" style="display:grid;gap:10px">
+        <input class="field mono" id="pin" placeholder="PIN" autocomplete="off" />
+        <button class="btn primary">Open host panel</button>
+      </form>
+    </div>
+    <div id="panel" class="hidden" style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
+      <section class="panel">
+        <h3>Approval requests (level: Human in the Loop)</h3>
+        <p class="muted" style="font-size:13px">The reason below was written by a player, through the agent. Would you approve it?</p>
+        <div id="approvals"></div>
+      </section>
+      <section style="display:grid;gap:16px;align-content:start">
+        <div class="panel">
+          <h3>Game controls</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" id="unlock">🔓 Unlock all levels</button>
+            <button class="btn danger" id="reset">🧹 Reset all scores</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Players (session roles, used by Fort Knox)</h3>
+          <div id="players"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script type="module">
+    import { esc } from "/static/js/api.js";
+    import { toast } from "/static/js/fx.js";
+    let pin = sessionStorage.getItem("vaultheist.pin") || "";
+    const call = async (path, body) => {
+      const r = await fetch(path, { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json", "X-Host-Pin": pin }, body: body ? JSON.stringify(body) : undefined });
+      if (!r.ok) throw new Error((await r.json()).detail || r.status);
+      return r.json();
+    };
+    let lastRaw = "";
+    async function load(force = true) {
+      const o = await call("/api/host/overview");
+      document.getElementById("login").classList.add("hidden");
+      document.getElementById("panel").classList.remove("hidden");
+      const raw = JSON.stringify(o);
+      if (!force && raw === lastRaw) return; // don't redraw while the host is clicking
+      lastRaw = raw;
+      document.getElementById("provider").textContent = o.provider;
+      document.getElementById("unlock").textContent = o.unlock_all ? "🔒 Re-lock levels" : "🔓 Unlock all levels";
+      document.getElementById("unlock").onclick = async () => { await call("/api/host/unlock_all", { approve: !o.unlock_all }); load(); };
+      document.getElementById("approvals").innerHTML = o.approvals.map((a) => `
+        <div class="rail-chip" style="display:block;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;gap:8px"><b class="mono">${esc(a.id)}</b><span class="pill">${esc(a.status)}</span></div>
+          <div class="muted" style="font-size:12px">${esc(a.player_name)} (${esc(a.team)}) · ${esc(a.level)} · action: ${esc(a.action)}</div>
+          <div style="margin:6px 0">“${esc(a.reason)}”</div>
+          ${a.status === "pending" ? `<button class="btn small" data-id="${esc(a.id)}" data-ok="1">✅ Approve</button> <button class="btn small danger" data-id="${esc(a.id)}" data-ok="0">⛔ Deny</button>` : ""}
+        </div>`).join("") || `<div class="muted">No requests yet.</div>`;
+      document.querySelectorAll("#approvals button").forEach((b) => (b.onclick = async () => { await call(`/api/host/approvals/${b.dataset.id}`, { approve: b.dataset.ok === "1" }); load(); }));
+      document.getElementById("players").innerHTML = o.players.map((p) => `
+        <div class="feed-item" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <span>${esc(p.name)} <span class="muted">(${esc(p.team)})</span></span>
+          <select class="field" style="width:auto;padding:4px 8px" data-token="${esc(p.token)}">
+            ${["guest", "staff", "admin"].map((r) => `<option ${r === p.role ? "selected" : ""}>${r}</option>`).join("")}
+          </select>
+        </div>`).join("") || `<div class="muted">Nobody has joined yet.</div>`;
+      document.querySelectorAll("#players select").forEach((s) => (s.onchange = async () => { await call(`/api/host/players/${s.dataset.token}/role`, { role: s.value }); toast("Role updated"); }));
+    }
+    document.getElementById("reset").onclick = async () => { if (confirm("Reset every score and conversation?")) { await call("/api/host/reset_scores", {}); toast("Scores reset"); load(); } };
+    document.getElementById("pin-form").onsubmit = async (e) => {
+      e.preventDefault();
+      pin = document.getElementById("pin").value.trim();
+      try { await load(); sessionStorage.setItem("vaultheist.pin", pin); } catch (err) { toast(err.message, "bad"); }
+    };
+    if (pin) load().catch(() => {});
+    setInterval(() => { if (pin && !document.getElementById("panel").classList.contains("hidden")) load(false).catch(() => {}); }, 4000);
+  </script>
+</body>
+</html>
