@@ -1,8 +1,9 @@
-"""A tiny plugin registry used by rails, tools, and LLM providers.
+"""A tiny plugin registry used by guardrails, tools, and LLM providers.
 
 Anything decorated with ``@REGISTRY.register("name")`` becomes available by
-name in level YAML files. Python files dropped into ``extensions/`` are
-imported at startup, so new plugins need no changes to core code.
+name in challenge YAML files. Python files in ``guardrails/custom/`` and
+``vault_heist/tools/custom/`` are imported at startup, so new plugins need
+no changes to core code.
 """
 
 from __future__ import annotations

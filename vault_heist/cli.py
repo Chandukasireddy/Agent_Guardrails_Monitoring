@@ -12,7 +12,7 @@ import threading
 import webbrowser
 from importlib import metadata
 
-from .config import CHALLENGES_DIR, CONFIG_DIR, CUSTOM_CHECKS_DIR, EXTENSIONS_DIR, get_settings, load_levels
+from .config import CHALLENGES_DIR, CONFIG_DIR, CUSTOM_CHECKS_DIR, TOOLS_CUSTOM_DIR, get_settings, load_levels
 
 
 def _banner(url: str, pin: str, provider: str) -> None:
@@ -64,7 +64,7 @@ def cmd_doctor(_: argparse.Namespace) -> None:
     print(f"{ok(bool(os.environ.get('NVIDIA_API_KEY')))}NVIDIA_API_KEY {'set' if os.environ.get('NVIDIA_API_KEY') else 'not set'} (model={s.llm.nvidia_model}, limit {s.llm.nvidia_rpm}/min)")
     print(f"{ok(OllamaProvider.available(s.llm))}Ollama        {s.llm.ollama_url} model={s.llm.ollama_model}")
     print(f"{ok(bool(os.environ.get('LANGFUSE_PUBLIC_KEY')))}Langfuse      {'keys set' if os.environ.get('LANGFUSE_PUBLIC_KEY') else 'not configured (local traces only)'}")
-    for kind, folder in (("rails", CUSTOM_CHECKS_DIR), ("tools", EXTENSIONS_DIR / "tools")):
+    for kind, folder in (("rails", CUSTOM_CHECKS_DIR), ("tools", TOOLS_CUSTOM_DIR)):
         loaded = load_extension_modules(folder)
         print(f"OK Custom {kind:<6} {', '.join(loaded) or 'none'}")
     print(f"OK Rails       {', '.join(RAILS.names())}")

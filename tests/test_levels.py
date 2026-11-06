@@ -2,7 +2,7 @@
 
 import pytest
 
-from vault_heist.config import CUSTOM_CHECKS_DIR, EXTENSIONS_DIR, load_levels
+from vault_heist.config import CUSTOM_CHECKS_DIR, TOOLS_CUSTOM_DIR, load_levels
 from vault_heist.crews.attacker import leaked
 from guardrails import RAILS
 from vault_heist.registry import load_extension_modules
@@ -11,7 +11,7 @@ from vault_heist.tools import TOOLS
 from .conftest import host
 
 load_extension_modules(CUSTOM_CHECKS_DIR)
-load_extension_modules(EXTENSIONS_DIR / "tools")
+load_extension_modules(TOOLS_CUSTOM_DIR)
 LEVELS = load_levels()
 
 # One known solution per challenge, written the way a visitor would say it.

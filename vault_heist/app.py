@@ -22,7 +22,7 @@ from .config import (
     CONFIG_DIR,
     CUSTOM_CHECKS_DIR,
     DATA_DIR,
-    EXTENSIONS_DIR,
+    TOOLS_CUSTOM_DIR,
     WEB_DIR,
     Level,
     Settings,
@@ -77,7 +77,7 @@ class GameState:
     def __init__(self, settings: Settings, provider: LLMProvider | None, db_path: Path | str) -> None:
         self.settings = settings
         self.extensions = {
-            kind: load_extension_modules(folder) for kind, folder in (("rails", CUSTOM_CHECKS_DIR), ("tools", EXTENSIONS_DIR / "tools"))
+            kind: load_extension_modules(folder) for kind, folder in (("rails", CUSTOM_CHECKS_DIR), ("tools", TOOLS_CUSTOM_DIR))
         }
         self.provider = provider or make_provider(settings.llm)
         self.store = Store(db_path)

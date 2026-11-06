@@ -1,8 +1,8 @@
 """Settings and level loading.
 
 Settings come from ``config/settings.yaml``; any value can be overridden with
-an environment variable (see ``.env.example``). Levels are YAML files in
-``config/levels/`` and ``extensions/levels/``.
+an environment variable (see ``.env.example``). Challenges are YAML files in
+``challenges/``.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
 CHALLENGES_DIR = ROOT / "challenges"
 SANDBOX_DIR = ROOT / "sandbox"
-EXTENSIONS_DIR = ROOT / "extensions"
+TOOLS_CUSTOM_DIR = ROOT / "vault_heist" / "tools" / "custom"
 GUARDRAILS_DIR = ROOT / "guardrails"
 CUSTOM_CHECKS_DIR = GUARDRAILS_DIR / "custom"
 WEB_DIR = ROOT / "web"
