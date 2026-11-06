@@ -16,7 +16,7 @@ Workshop participants: students and meetup attendees playing together in a room,
 
 ## Product Purpose
 
-Vault Heist is a CTF-style game that teaches AI guardrails, authorization, and observability by letting players attack a chatbot guard that protects a fake secret. Each vault adds one defense. Success means players both enjoy the play and leave understanding that security decisions belong in code, not in prompts.
+Token Vault is a CTF-style game that teaches AI guardrails, authorization, and observability by letting players attack a chatbot guard that protects a fake secret. Each vault adds one defense. Success means players both enjoy the play and leave understanding that security decisions belong in code, not in prompts.
 
 ## Positioning
 

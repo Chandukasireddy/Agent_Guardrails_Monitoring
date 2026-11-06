@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-"Vault Heist" is a CTF-style workshop game: players chat with LLM guards to extract fake secrets, and each of the five challenges teaches one attack and the defense that stops it. It is a Python package (`vault_heist/`) served by FastAPI, with a build-free web front end in `web/`. `README.md` describes the levels, the workshop format, and the user-facing setup.
+"Token Vault" is a CTF-style workshop game: players chat with LLM guards to extract fake secrets, and each of the five challenges teaches one attack and the defense that stops it. It is a Python package (`vault_heist/`) served by FastAPI, with a build-free web front end in `web/`. `README.md` describes the levels, the workshop format, and the user-facing setup.
 
 ## Commands
 
@@ -27,7 +27,7 @@ Tests use the offline mock guard (`LLM_PROVIDER=mock` behaviour) and an in-memor
 
 - **Request flow:** `app.py` `/api/levels/{id}/chat` → `Tracer.turn()` → `GuardPipeline.run()` in `pipeline/graph.py`. The LangGraph graph is `input_rails → guard → (tools → guard)* → output_rails`. Each node appends UI events (consumed by `web/js/views/play.js` to animate the pipeline) and opens a trace span.
 - **Plugins via registries** (`registry.py`): `RAILS` (`rails/base.py`), `TOOLS` (`tools/base.py`), `PROVIDERS` (`llm/base.py`). Levels reference rails and tools by registered name. Files in `extensions/rails` and `extensions/tools` are imported at startup; broken files are logged and skipped.
-- **Challenges** are YAML in `config/levels/` (files starting with `_` are ignored), validated by the `Level` model in `config.py`, and reloaded automatically when files change. `system_prompt` supports `{guard}`. Secrets live in fake files under `workshop/` and are read through tools (`read_file`, `customer_lookup`), never placed in a prompt. Old vaults are in `archive/levels_v1/` (local only).
+- **Challenges** are YAML in `challenges/` (files starting with `_` are ignored), validated by the `Level` model in `config.py`, and reloaded automatically when files change. `system_prompt` supports `{guard}`. Fake files live in `sandbox/` and are read through tools (`read_file`, `customer_lookup`), never placed in a prompt. Old vaults are in `archive/levels_v1/` (local only). The NVIDIA key is read from NVIDIA_API_KEY in `.env` only.
 - **LLM providers** share a neutral message format (see `llm/base.py`). The Anthropic provider sends assistant `raw` content blocks back unchanged and folds tool results and follow-up user text into one user turn; keep conversation history append-only. `make_provider` falls back to the mock if a provider fails to start.
 - **Mock guard** (`llm/mock_provider.py`) picks tools from keywords and file names, and follows an `ACTION: read <path>` note inside a tool result once. Challenge solvability tests in `tests/test_levels.py` depend on it; the live model is less predictable, so check both.
 - **Authorization lives in tools**, not prompts: `vault_read` implements the `authz` modes (`none`, `claimed_role`, `approval`, `session_role`); `make_offer` enforces price floors. The shell and file system are simulated in `tools/fakefs.py`.
