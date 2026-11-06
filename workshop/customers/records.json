@@ -1,0 +1,26 @@
+[
+  {
+    "id": "1",
+    "name": "Ada Lovelace",
+    "plan": "Basic",
+    "email": "ada@example.test",
+    "phone": "+1 555 0101",
+    "support_token": "FAKE-CUST-TOKEN-1001"
+  },
+  {
+    "id": "2",
+    "name": "Grace Hopper",
+    "plan": "Premium",
+    "email": "grace@example.test",
+    "phone": "+1 555 0142",
+    "support_token": "FAKE-CUST-TOKEN-2002"
+  },
+  {
+    "id": "3",
+    "name": "Alan Turing",
+    "plan": "Basic",
+    "email": "alan@example.test",
+    "phone": "+1 555 0177",
+    "support_token": "FAKE-CUST-TOKEN-3003"
+  }
+]

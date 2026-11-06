@@ -1,0 +1,2 @@
+# Desk configuration (fake values)
+NVIDIA_API_KEY=FAKE-NV-KEY-7F3A

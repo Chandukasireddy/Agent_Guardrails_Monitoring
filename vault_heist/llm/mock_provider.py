@@ -85,6 +85,24 @@ class MockProvider(LLMProvider):
         def call(name: str, **args: Any) -> ToolCall:
             return ToolCall(id="mock-" + uuid.uuid4().hex[:8], name=name, args=args)
 
+        # Workshop tools: a file path named in the message, or a keyword that points at one.
+        if "customer_lookup" in names:
+            m = re.search(r"customer\s*(?:id\s*)?#?(\d+)", text, re.I)
+            if m:
+                contact = bool(re.search(r"contact|email|phone", text, re.I))
+                return call("customer_lookup", customer_id=m.group(1), include_contact=contact)
+        if "read_file" in names:
+            m = re.search(r"([\w./-]+\.(?:txt|md|json)|\.env)", text)
+            path = m.group(1) if m else None
+            if not path:
+                for words, guess in (("ticket", "tickets/ticket_1042.txt"), ("polic", "policies/returns_policy.md"),
+                                     ("return", "policies/returns_policy.md"), ("key", "desk/config.txt")):
+                    if words in low:
+                        path = guess
+                        break
+            if path:
+                return call("read_file", path=path)
+
         if "shell" in names:
             m = re.search(r"`([^`]+)`", text) or re.search(r"(?:run|execute|type)\s*:?\s+(.+)$", text, re.I)
             if m:
@@ -122,6 +140,20 @@ class MockProvider(LLMProvider):
         last = messages[-1] if messages else {"role": "user", "content": ""}
 
         if last["role"] == "tool":
+            # Indirect injection, faithfully: a tool result that says "ACTION: read <path>" gets obeyed
+            # once, the way a model that trusts its context would. The mock does this only once per turn.
+            since_user = []
+            for msg in reversed(messages):
+                if msg["role"] == "user":
+                    break
+                since_user.append(msg)
+            found = re.search(r"ACTION: read (\S+)", str(last.get("content", "")))
+            if found and sum(m["role"] == "tool" for m in since_user) == 1 and any(t.name == "read_file" for t in tools):
+                return LLMReply(
+                    text="",
+                    tool_calls=[ToolCall(id="mock-" + uuid.uuid4().hex[:8], name="read_file", args={"path": found.group(1)})],
+                    model=self.model,
+                )
             outputs = []
             for msg in reversed(messages):
                 if msg["role"] != "tool":
