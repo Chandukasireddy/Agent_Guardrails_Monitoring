@@ -28,8 +28,20 @@ def _banner(url: str, pin: str, provider: str) -> None:
     )
 
 
+def _ensure_env_file() -> None:
+    """First run: create .env from .env.example so nobody has to copy it by hand."""
+    from .config import ROOT
+
+    env, example = ROOT / ".env", ROOT / ".env.example"
+    if not env.exists() and example.exists():
+        env.write_text(example.read_text(encoding="utf-8"), encoding="utf-8")
+        print(f"Created {env.name} from {example.name}. Add your keys there if you have them.")
+
+
 def cmd_serve(args: argparse.Namespace) -> None:
     import uvicorn
+
+    _ensure_env_file()
 
     from .app import create_app
 
