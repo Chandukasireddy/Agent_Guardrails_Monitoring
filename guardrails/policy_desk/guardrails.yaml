@@ -1,0 +1,10 @@
+# Guardrails for the policy desk challenge.
+# label: code = a Python rule, model = another AI decides, prompt = the guard's own instructions.
+input:
+  - name: topic_scope
+    label: code
+    explain: "Refuses any message that does not mention a returns-policy topic."
+    params:
+      topics: ["policy", "return", "refund", "shipping", "exchange", "warranty"]
+tool: []
+output: []

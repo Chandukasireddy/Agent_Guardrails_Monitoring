@@ -1,0 +1,11 @@
+# Guardrails for the roleplay override challenge.
+# label: code = a Python rule, model = another AI decides, prompt = the guard's own instructions.
+input:
+  - name: pressure_detector
+    label: code
+    explain: "Flags urgency, authority claims and emotional pressure."
+  - name: injection_heuristic
+    label: code
+    explain: "Flags phrases such as 'ignore previous instructions'."
+tool: []
+output: []

@@ -138,7 +138,7 @@ def _rail_info(specs: list[Any]) -> list[dict[str, str]]:
     out = []
     for spec in specs:
         desc = RAILS.get(spec.name).description if spec.name in RAILS else "(unknown rail)"
-        out.append({"name": spec.name, "description": desc})
+        out.append({"name": spec.name, "description": desc, "label": spec.label, "explain": spec.explain})
     return out
 
 

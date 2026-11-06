@@ -1,0 +1,5 @@
+# Guardrails for the key vault challenge.
+# label: code = a Python rule, model = another AI decides, prompt = the guard's own instructions.
+input: []
+tool: []
+output: []

@@ -1,0 +1,8 @@
+# Guardrails for the customer records challenge.
+# label: code = a Python rule, model = another AI decides, prompt = the guard's own instructions.
+input: []
+tool: []
+output:
+  - name: pii_redactor
+    label: code
+    explain: "Blocks a reply that contains an email address or phone number."

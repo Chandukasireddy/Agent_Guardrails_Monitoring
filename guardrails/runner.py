@@ -60,7 +60,9 @@ def run_stage(
             tool_name=tool_name,
             tool_args=tool_args or {},
         )
-        with trace.span(f"{stage}_rail:{spec.name}", kind="guardrail", input=text, rail=spec.name) as span:
+        # Named after the challenge and the check, so Langfuse shows exactly which guardrail acted.
+        with trace.span(f"{level.id}/{stage}/{spec.name}", kind="guardrail", input=text, rail=spec.name,
+                        label=spec.label, explain=spec.explain) as span:
             try:
                 verdict = RAILS.get(spec.name)(**spec.params).check(ctx)
             except Exception as exc:  # noqa: BLE001 - a broken check fails closed
@@ -69,7 +71,8 @@ def run_stage(
             status = "pass" if verdict.allowed else "block"
             span.end(output=verdict.reason or "allowed", status=status, reason=verdict.reason)
         top = max(top, verdict.suspicion)
-        events.append({"stage": stage, "name": spec.name, "status": status, "reason": verdict.reason, "ms": span.ms})
+        events.append({"stage": stage, "name": spec.name, "status": status, "reason": verdict.reason,
+                       "label": spec.label, "explain": spec.explain, "ms": span.ms})
         if not verdict.allowed:
             return StageResult(verdict, spec.name, events, top)
     return StageResult(None, "", events, top)

@@ -116,3 +116,16 @@ def test_stage_runner_stops_at_the_first_block(client):
 def test_nemo_config_ships_with_the_adapter():
     from vault_heist.config import ROOT
     assert (ROOT / "guardrails" / "adapters" / "nemo_config" / "config.yml").is_file()
+
+
+def test_each_challenge_has_its_own_guardrails_folder():
+    from vault_heist.config import ROOT, load_levels
+
+    levels = load_levels()
+    for level in levels.values():
+        assert level.guardrails == f"guardrails/{level.id}/guardrails.yaml", level.id
+        assert (ROOT / level.guardrails).is_file(), level.id
+        assert (ROOT / "guardrails" / level.id / "README.md").is_file(), level.id
+        for spec in level.input_rails + level.tool_rails + level.output_rails:
+            assert spec.label in {"code", "model", "prompt"}, (level.id, spec.name)
+            assert spec.explain, (level.id, spec.name)

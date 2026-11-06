@@ -103,10 +103,16 @@ def get_settings() -> Settings:
 
 
 class RailSpec(BaseModel):
-    """One guardrail in a level: ``name`` from the rail registry plus its params."""
+    """One guardrail in a challenge: ``name`` from the check registry plus its params.
+
+    ``label`` says whether the decision is made by ``code``, a ``model``, or a ``prompt``.
+    ``explain`` is one plain sentence shown in the UI and in Langfuse.
+    """
 
     name: str
     params: dict[str, Any] = Field(default_factory=dict)
+    label: str = "code"
+    explain: str = ""
 
 
 class Character(BaseModel):
@@ -141,6 +147,7 @@ class Level(BaseModel):
     output_rails: list[RailSpec] = Field(default_factory=list)
     tool_rails: list[RailSpec] = Field(default_factory=list)
     hints: list[str] = Field(default_factory=list)
+    guardrails: str = ""  # path to this challenge's guardrails.yaml, relative to the project root
     starters: list[str] = Field(default_factory=list)  # example messages shown to a new visitor
     lesson: Lesson = Field(default_factory=Lesson)
     settings: dict[str, Any] = Field(default_factory=dict)
@@ -163,12 +170,27 @@ def _level_files() -> list[Path]:
     return [f for f in files if not f.name.startswith("_")]
 
 
+def _attach_guardrails(level: "Level") -> None:
+    """Read the challenge's own guardrails.yaml and fill in its input, tool and output checks."""
+    path = ROOT / level.guardrails
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+
+    def specs(items: list[dict[str, Any]] | None) -> list[RailSpec]:
+        return [RailSpec.model_validate(item) for item in (items or [])]
+
+    level.input_rails = specs(data.get("input"))
+    level.tool_rails = specs(data.get("tool"))
+    level.output_rails = specs(data.get("output"))
+
+
 def load_levels() -> dict[str, Level]:
     levels: dict[str, Level] = {}
     for path in _level_files():
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
             level = Level.model_validate({**data, "source": path.relative_to(ROOT).as_posix()})
+            if level.guardrails:
+                _attach_guardrails(level)
         except Exception as exc:  # noqa: BLE001 - a broken level must not stop the game
             log.error("Skipping level file %s: %s", path.name, exc)
             continue
