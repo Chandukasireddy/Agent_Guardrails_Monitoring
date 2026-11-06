@@ -1,23 +1,22 @@
+# Secrets: real keys live only in .env (copy .env.example)
+.env
+
+# Python and tooling caches
 .venv/
 __pycache__/
 *.pyc
-.env
-data/*
-!data/.gitkeep
 .pytest_cache/
 *.egg-info/
 dist/
 build/
 
-# Personal Claude Code settings and design-tool caches, never committed
+# Local runtime data (database and trace log); keep the folder itself
+data/*
+!data/.gitkeep
+
+# Personal settings and the design tool's local state (never committed)
 /.claude/settings.local.json
-/.impeccable/hook.cache.json
-
-# Local-only folders: old vault files, self-host compose, screenshots with keys, tool state
-/archive/
-/docs/screenshots/
 /.impeccable/
-/.claude/launch.json
 
-# Prebuilt Impeccable launcher binary (about 20 MB, downloaded or rebuilt locally)
+# The Impeccable launcher binary (about 20 MB; rebuilt or downloaded locally)
 /.claude/skills/impeccable/scripts/bin/
