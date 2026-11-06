@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import re
 
-from ..base import RAILS, Rail, RailContext, Verdict
+from ..base import CHECKS, Check, CheckContext, Verdict
 
 
-@RAILS.register("injection_heuristic")
-class InjectionHeuristic(Rail):
+@CHECKS.register("injection_heuristic")
+class InjectionHeuristic(Check):
     description = "Spots classic prompt-injection phrases like 'ignore previous instructions'."
     defaults = {
         "patterns": [
@@ -24,7 +24,7 @@ class InjectionHeuristic(Rail):
         ]
     }
 
-    def check(self, ctx: RailContext) -> Verdict:
+    def check(self, ctx: CheckContext) -> Verdict:
         for pattern in self.params["patterns"]:
             if re.search(pattern, ctx.text, re.IGNORECASE):
                 return Verdict.block("Looks like a prompt-injection attempt.", 0.8)

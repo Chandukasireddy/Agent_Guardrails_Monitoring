@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import re
 
-from ..base import RAILS, Rail, RailContext, Verdict
+from ..base import CHECKS, Check, CheckContext, Verdict
 
 
-@RAILS.register("keyword_block")
-class KeywordBlock(Rail):
+@CHECKS.register("keyword_block")
+class KeywordBlock(Check):
     description = "Blocks messages that contain any word from a deny list."
     defaults = {"words": ["secret", "password", "key", "flag"]}
 
-    def check(self, ctx: RailContext) -> Verdict:
+    def check(self, ctx: CheckContext) -> Verdict:
         low = ctx.text.lower()
         for word in self.params["words"]:
             if re.search(rf"\b{re.escape(word.lower())}", low):

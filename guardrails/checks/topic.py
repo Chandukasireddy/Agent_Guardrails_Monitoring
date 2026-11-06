@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from ..base import RAILS, Rail, RailContext, Verdict
+from ..base import CHECKS, Check, CheckContext, Verdict
 
 
-@RAILS.register("topic_scope")
-class TopicScope(Rail):
+@CHECKS.register("topic_scope")
+class TopicScope(Check):
     name: ClassVar[str] = "topic_scope"
     description = "Refuses messages that do not mention any of the allowed topics."
     defaults = {"topics": []}
 
-    def check(self, ctx: RailContext) -> Verdict:
+    def check(self, ctx: CheckContext) -> Verdict:
         topics = [t.lower() for t in self.params["topics"]]
         if not topics:
             return Verdict.ok()

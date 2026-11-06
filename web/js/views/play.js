@@ -26,7 +26,7 @@ export async function renderPlay(view, levelId, setCrumbs) {
   setCrumbs([{ label: "Vaults", href: "#/map" }, { label: level.title }]);
   const levels = await api("/api/levels").catch(() => []);
   const c = level.character;
-  const railCount = ["input", "tool", "output"].reduce((n, k) => n + (level.rails[k] || []).length, 0);
+  const checkCount = ["input", "tool", "output"].reduce((n, k) => n + (level.checks[k] || []).length, 0);
 
   view.innerHTML = `
     <div class="workspace">
@@ -90,14 +90,14 @@ export async function renderPlay(view, levelId, setCrumbs) {
 
         <section class="panel" aria-labelledby="route-title">
           <div class="panel-head">
-            <h2 class="panel-title" id="route-title">Route</h2>
-            <span class="muted small-print" id="route-note">Your next message will travel this route.</span>
+            <h2 class="panel-title" id="route-title">Message path</h2>
+            <span class="muted small-print" id="route-note">Each message passes these checks in order.</span>
           </div>
           <ol class="route" id="route" aria-live="polite"></ol>
         </section>
 
         <section class="panel">
-          <h2 class="panel-title">Defenses on this vault</h2>
+          <h2 class="panel-title">Checks on this vault</h2>
           <ul class="defenses" id="defenses"></ul>
         </section>
 
@@ -139,7 +139,7 @@ export async function renderPlay(view, levelId, setCrumbs) {
   // --- defenses ----------------------------------------------------------
   const defs = [];
   for (const [stage, label] of [["input", "Input check"], ["tool", "Tool check"], ["output", "Output check"]]) {
-    for (const r of level.rails[stage] || []) defs.push({ label, name: r.name, desc: r.description });
+    for (const r of level.checks[stage] || []) defs.push({ label, name: r.name, desc: r.description });
   }
   for (const t of level.tools) defs.push({ label: "Tool", name: t, desc: "The guard can call this tool." });
   $("#defenses").innerHTML = defs.length
@@ -148,11 +148,11 @@ export async function renderPlay(view, levelId, setCrumbs) {
 
   // --- route (the signature: each message travels these stations) -----
   const stations = [{ key: "you", label: "Your message" }];
-  (level.rails.input || []).forEach((r) => stations.push({ key: `input:${r.name}`, label: r.name }));
+  (level.checks.input || []).forEach((r) => stations.push({ key: `input:${r.name}`, label: r.name }));
   stations.push({ key: "guard", label: c.name });
-  (level.rails.tool || []).forEach((r) => stations.push({ key: `tool:${r.name}`, label: r.name }));
+  (level.checks.tool || []).forEach((r) => stations.push({ key: `tool:${r.name}`, label: r.name }));
   level.tools.forEach((t) => stations.push({ key: `toolcall:${t}`, label: t }));
-  (level.rails.output || []).forEach((r) => stations.push({ key: `output:${r.name}`, label: r.name }));
+  (level.checks.output || []).forEach((r) => stations.push({ key: `output:${r.name}`, label: r.name }));
   stations.push({ key: "reply", label: "Reply to you" });
 
   function drawRoute() {
@@ -400,7 +400,7 @@ export async function renderPlay(view, levelId, setCrumbs) {
 
   $("#trace-btn").onclick = () => lastTrace && openTrace(lastTrace);
   $("#lesson-btn")?.addEventListener("click", () => showCracked(level, null));
-  if (railCount === 0) $("#route-note").textContent = "No checks here. Every message goes straight to the guard.";
+  if (checkCount === 0) $("#route-note").textContent = "No checks here. Every message goes straight to the guard.";
 }
 
 // --- dialogs -------------------------------------------------------------
@@ -431,10 +431,10 @@ function showCracked(level, result) {
     </div>
     <details class="behind">
       <summary>Behind the curtain</summary>
-      <p class="small-print">System prompt (authz <span class="mono">${esc(reveal.authz)}</span>, file <span class="mono">${esc(reveal.source)}</span>)</p>
+      <p class="small-print">System prompt (access <span class="mono">${esc(reveal.access)}</span>, file <span class="mono">${esc(reveal.source)}</span>)</p>
       <pre class="code">${esc(reveal.system_prompt)}</pre>
       <p class="small-print">Checks and their settings</p>
-      <pre class="code">${esc(JSON.stringify(reveal.rails, null, 2))}</pre>
+      <pre class="code">${esc(JSON.stringify(reveal.checks, null, 2))}</pre>
     </details>
     <footer class="dialog-foot">
       <a class="btn primary" href="#/map" data-close>Back to vaults</a>

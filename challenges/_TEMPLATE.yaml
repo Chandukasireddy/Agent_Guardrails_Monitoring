@@ -1,8 +1,8 @@
-# Level template. Copy this file (or run: uv run vault-heist new-level my_level),
+# Challenge template. Copy this file (or run: uv run token-vault new-challenge my_level),
 # rename it, and edit. Files starting with "_" are ignored. Levels reload on save.
 
 id: my_level                  # unique, used in URLs
-order: 100                    # position on the level map
+order: 100                    # position on the challenge map
 title: My Level
 subtitle: One line that teases the challenge
 points: 100
@@ -37,17 +37,17 @@ vault_items: {}
 tools: []
 
 # How vault_read checks access: none | claimed_role | session_role | approval
-authz: none
+access: none
 
 # Guardrails, run in order. Built-ins: length_limit, keyword_block,
 # injection_heuristic, pressure_detector, secret_scanner, llm_judge,
 # tool_allowlist, arg_guard, nemo. Add your own in guardrails/custom/.
-input_rails:
+input_checks:
   - name: injection_heuristic
-output_rails:
+output_checks:
   - name: secret_scanner
     params: {normalize: true}
-tool_rails: []
+tool_checks: []
 
 hints:
   - First hint, gentle.

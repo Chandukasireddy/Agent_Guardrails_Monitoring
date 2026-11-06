@@ -1,13 +1,13 @@
 """Optional adapter for NVIDIA NeMo Guardrails.
 
-Install with ``uv sync --extra nemo`` and add to a level:
+Install with ``uv sync --extra nemo`` and add to a challenge:
 
-    input_rails:
+    input_checks:
       - name: nemo
         params: {config_path: guardrails/adapters/nemo_config}
 
 The NeMo config decides whether the text is allowed. If NeMo is not
-installed, the rail reports that and lets the message through, so the game
+installed, the check reports that and lets the message through, so the game
 keeps running.
 """
 
@@ -17,32 +17,32 @@ import logging
 from functools import lru_cache
 from pathlib import Path
 
-from vault_heist.config import ROOT
-from ..base import RAILS, Rail, RailContext, Verdict
+from token_vault.config import ROOT
+from ..base import CHECKS, Check, CheckContext, Verdict
 
 log = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=4)
-def _load_rails(config_path: str):  # type: ignore[no-untyped-def]
+def _load_checks(config_path: str):  # type: ignore[no-untyped-def]
     from nemoguardrails import LLMRails, RailsConfig
 
     return LLMRails(RailsConfig.from_path(str(Path(ROOT, config_path))))
 
 
-@RAILS.register("nemo")
-class NemoRail(Rail):
+@CHECKS.register("nemo")
+class NemoRail(Check):
     description = "Runs NVIDIA NeMo Guardrails (Colang flows) on the text."
     defaults = {"config_path": "guardrails/adapters/nemo_config", "refusal_marker": "I'm sorry, I can't"}
 
-    def check(self, ctx: RailContext) -> Verdict:
+    def check(self, ctx: CheckContext) -> Verdict:
         try:
-            rails = _load_rails(self.params["config_path"])
+            checks = _load_checks(self.params["config_path"])
         except ImportError:
             log.warning("NeMo Guardrails is not installed. Run: uv sync --extra nemo")
             return Verdict.ok()
         role = "user" if ctx.stage != "output" else "assistant"
-        result = rails.generate(messages=[{"role": role, "content": ctx.text}])
+        result = checks.generate(messages=[{"role": role, "content": ctx.text}])
         content = result.get("content", "") if isinstance(result, dict) else str(result)
         if self.params["refusal_marker"].lower() in content.lower():
             return Verdict.block("NeMo Guardrails refused this message.", 0.8)

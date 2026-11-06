@@ -1,10 +1,10 @@
 import httpx
 import pytest
 
-from vault_heist.config import LLMSettings
-from vault_heist.llm import LLMError, ToolCall, ToolSpec
-from vault_heist.llm import nvidia_provider as nv
-from vault_heist.llm.rate_limit import SlidingWindowLimiter
+from token_vault.config import LLMSettings
+from token_vault.llm import LLMError, ToolCall, ToolSpec
+from token_vault.llm import nvidia_provider as nv
+from token_vault.llm.rate_limit import SlidingWindowLimiter
 
 FAKE_KEY = "nvapi-TEST-KEY-NOT-REAL"
 

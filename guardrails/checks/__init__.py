@@ -8,6 +8,6 @@ from . import (  # noqa: F401 - each import registers its checks
     pii,
     pressure,
     secret_scan,
-    tool_checks,
+    tool_limits,
     topic,
 )

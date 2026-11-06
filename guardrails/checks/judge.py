@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from ..base import RAILS, Rail, RailContext, Verdict
+from ..base import CHECKS, Check, CheckContext, Verdict
 
 
-@RAILS.register("llm_judge")
-class LLMJudge(Rail):
+@CHECKS.register("llm_judge")
+class LLMJudge(Check):
     description = "Asks a second model whether the text is an attempt to extract the secret."
     defaults = {
         "instruction": (
@@ -16,7 +16,7 @@ class LLMJudge(Rail):
         )
     }
 
-    def check(self, ctx: RailContext) -> Verdict:
+    def check(self, ctx: CheckContext) -> Verdict:
         if ctx.provider.judge(self.params["instruction"], ctx.text):
             return Verdict.block("The judge model flagged this as an extraction attempt.", 0.9)
         return Verdict.ok()

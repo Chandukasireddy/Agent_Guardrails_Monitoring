@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from ..base import RAILS, Rail, RailContext, Verdict
+from ..base import CHECKS, Check, CheckContext, Verdict
 from ..text import decoded_variants, normalize
 
 
-@RAILS.register("secret_scanner")
-class SecretScanner(Rail):
-    """Output rail: stops the reply if the secret is in it.
+@CHECKS.register("secret_scanner")
+class SecretScanner(Check):
+    """Output check: stops the reply if the secret is in it.
 
     ``mode: exact`` only catches the secret as written. ``normalize: true``
     ignores case, spaces and punctuation. ``decode: true`` also undoes base64,
@@ -18,7 +18,7 @@ class SecretScanner(Rail):
     description = "Blocks replies that contain the secret, optionally after decoding tricks."
     defaults = {"normalize": False, "decode": False, "min_fragment": 0}
 
-    def check(self, ctx: RailContext) -> Verdict:
+    def check(self, ctx: CheckContext) -> Verdict:
         secret = ctx.level.secret
         texts = decoded_variants(ctx.text) if self.params["decode"] else [ctx.text]
         for text in texts:

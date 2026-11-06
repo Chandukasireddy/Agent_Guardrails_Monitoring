@@ -1,11 +1,11 @@
-# NVIDIA NeMo Guardrails sample config, used by the optional `nemo` rail.
+# NVIDIA NeMo Guardrails sample config, used by the optional `nemo` check.
 # Install: uv sync --extra nemo
 # Then add to a level:
-#   input_rails:
+#   input_checks:
 #     - name: nemo
 #       params: {config_path: guardrails/adapters/nemo_config}
 #
-# NeMo needs its own model connection for self-check rails. Set the engine and
+# NeMo needs its own model connection for self-check checks. Set the engine and
 # model to one you have access to; see the NeMo Guardrails docs for options.
 models:
   - type: main
@@ -14,7 +14,7 @@ models:
     parameters:
       base_url: http://localhost:11434
 
-rails:
+checks:
   input:
     flows:
       - self check input

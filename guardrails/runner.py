@@ -17,12 +17,12 @@ import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from .base import RAILS, RailContext, Verdict
+from .base import CHECKS, CheckContext, Verdict
 
 if TYPE_CHECKING:
-    from vault_heist.config import Level, RailSpec
-    from vault_heist.llm import LLMProvider
-    from vault_heist.tracing import Trace
+    from token_vault.config import Level, CheckSpec
+    from token_vault.llm import LLMProvider
+    from token_vault.tracing import Trace
 
 log = logging.getLogger(__name__)
 
@@ -30,14 +30,14 @@ log = logging.getLogger(__name__)
 @dataclass
 class StageResult:
     verdict: Verdict | None  # None means every check in the stage let the text through
-    rail: str = ""  # the check that blocked, or "" when nothing blocked
+    check: str = ""  # the check that blocked, or "" when nothing blocked
     events: list[dict[str, Any]] = field(default_factory=list)  # one entry per check that ran
     suspicion: float = 0.0  # the highest suspicion any check reported (drives the tripwire meter)
 
 
 def run_stage(
     stage: str,
-    specs: "list[RailSpec]",
+    specs: "list[CheckSpec]",
     *,
     text: str,
     level: "Level",
@@ -51,7 +51,7 @@ def run_stage(
     events: list[dict[str, Any]] = []
     top = 0.0
     for spec in specs:
-        ctx = RailContext(
+        ctx = CheckContext(
             stage=stage,
             text=text,
             level=level,
@@ -61,10 +61,10 @@ def run_stage(
             tool_args=tool_args or {},
         )
         # Named after the challenge and the check, so Langfuse shows exactly which guardrail acted.
-        with trace.span(f"{level.id}/{stage}/{spec.name}", kind="guardrail", input=text, rail=spec.name,
+        with trace.span(f"{level.id}/{stage}/{spec.name}", kind="guardrail", input=text, check=spec.name,
                         label=spec.label, explain=spec.explain) as span:
             try:
-                verdict = RAILS.get(spec.name)(**spec.params).check(ctx)
+                verdict = CHECKS.get(spec.name)(**spec.params).check(ctx)
             except Exception as exc:  # noqa: BLE001 - a broken check fails closed
                 log.exception("Check %s crashed", spec.name)
                 verdict = Verdict.block(f"Check error: {exc}", 0.0)

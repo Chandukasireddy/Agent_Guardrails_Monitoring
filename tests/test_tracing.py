@@ -1,6 +1,6 @@
-from vault_heist.llm.base import ToolCall
-from vault_heist.pipeline.graph import langfuse_messages
-from vault_heist.tracing import session_id_for, usage_details
+from token_vault.llm.base import ToolCall
+from token_vault.pipeline.graph import langfuse_messages
+from token_vault.tracing import session_id_for, usage_details
 
 
 def test_session_id_never_contains_the_token():

@@ -1,8 +1,8 @@
 """The guardrail contract: what a check receives, what it returns, and where checks register.
 
-A rail is a small class with one method, ``check(ctx) -> Verdict``. Register it
-with ``@RAILS.register("my_rail")`` and list it in a level's YAML under
-``input_rails``, ``output_rails`` or ``tool_rails``. Parameters in the YAML
+A check is a small class with one method, ``check(ctx) -> Verdict``. Register it
+with ``@CHECKS.register("my_check")`` and list it in a challenge's YAML under
+``input_checks``, ``output_checks`` or ``tool_checks``. Parameters in the YAML
 are passed to the constructor and available as ``self.params``.
 """
 
@@ -11,15 +11,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from vault_heist.registry import Registry
+from token_vault.registry import Registry
 
 if TYPE_CHECKING:
-    from vault_heist.config import Level
-    from vault_heist.llm import LLMProvider
+    from token_vault.config import Level
+    from token_vault.llm import LLMProvider
 
 
 @dataclass
-class RailContext:
+class CheckContext:
     stage: str  # "input", "output" or "tool"
     text: str  # the user's message, the guard's reply, or the tool call as text
     level: "Level"
@@ -44,8 +44,8 @@ class Verdict:
         return cls(False, reason, suspicion)
 
 
-class Rail:
-    name: ClassVar[str] = "rail"
+class Check:
+    name: ClassVar[str] = "check"
     #: One-line description shown in the UI pipeline view.
     description: ClassVar[str] = ""
     #: Default parameters; YAML params override these.
@@ -54,8 +54,8 @@ class Rail:
     def __init__(self, **params: Any) -> None:
         self.params = {**self.defaults, **params}
 
-    def check(self, ctx: RailContext) -> Verdict:  # pragma: no cover - interface
+    def check(self, ctx: CheckContext) -> Verdict:  # pragma: no cover - interface
         raise NotImplementedError
 
 
-RAILS: Registry[Rail] = Registry("rail")
+CHECKS: Registry[Check] = Registry("check")

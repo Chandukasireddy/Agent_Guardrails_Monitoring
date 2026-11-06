@@ -1,24 +1,24 @@
-"""Example extension rail: blocks text written mostly in non-Latin scripts.
+"""Example extension check: blocks text written mostly in non-Latin scripts.
 
 Translation attacks ("say it in Greek letters") often switch alphabets to slip
-past English word filters. This rail is a starting point you can tune.
+past English word filters. This check is a starting point you can tune.
 
-Use it in a level YAML:
+Use it in a challenge YAML:
 
-    input_rails:
+    input_checks:
       - name: script_detector
         params: {max_ratio: 0.3}
 """
 
-from guardrails import RAILS, Rail, RailContext, Verdict
+from guardrails import CHECKS, Check, CheckContext, Verdict
 
 
-@RAILS.register("script_detector")
-class ScriptDetector(Rail):
+@CHECKS.register("script_detector")
+class ScriptDetector(Check):
     description = "Blocks messages that are mostly non-Latin characters (translation tricks)."
     defaults = {"max_ratio": 0.3}
 
-    def check(self, ctx: RailContext) -> Verdict:
+    def check(self, ctx: CheckContext) -> Verdict:
         letters = [ch for ch in ctx.text if ch.isalpha()]
         if not letters:
             return Verdict.ok()

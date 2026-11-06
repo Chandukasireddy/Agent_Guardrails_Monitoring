@@ -2,7 +2,7 @@
 
 Everything about guardrails lives in this folder:
 
-- ``base.py``      the contract: ``Rail``, ``RailContext``, ``Verdict`` and the ``RAILS`` registry
+- ``base.py``      the contract: ``Check``, ``CheckContext``, ``Verdict`` and the ``CHECKS`` registry
 - ``runner.py``    runs one stage of checks and records each step
 - ``checks/``      the built-in checks, one file per check
 - ``adapters/``    connections to outside frameworks (NVIDIA NeMo Guardrails)
@@ -13,7 +13,7 @@ Read ``README.md`` in this folder for the full guide.
 """
 
 from . import adapters, checks  # noqa: F401 - importing registers every built-in check
-from .base import RAILS, Rail, RailContext, Verdict
+from .base import CHECKS, Check, CheckContext, Verdict
 from .runner import StageResult, run_stage
 
-__all__ = ["RAILS", "Rail", "RailContext", "Verdict", "StageResult", "run_stage"]
+__all__ = ["CHECKS", "Check", "CheckContext", "Verdict", "StageResult", "run_stage"]

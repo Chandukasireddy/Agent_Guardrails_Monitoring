@@ -5677,6 +5677,64 @@ wheels = [
 ]
 
 [[package]]
+name = "token-vault"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "anthropic" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "langgraph" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "pyyaml" },
+    { name = "uvicorn" },
+]
+
+[package.optional-dependencies]
+all = [
+    { name = "crewai" },
+    { name = "langfuse", version = "4.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "langfuse", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "nemoguardrails" },
+]
+crew = [
+    { name = "crewai" },
+]
+langfuse = [
+    { name = "langfuse", version = "4.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "langfuse", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+nemo = [
+    { name = "nemoguardrails" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anthropic", specifier = ">=0.70" },
+    { name = "crewai", marker = "extra == 'crew'", specifier = ">=0.100" },
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "langfuse", marker = "extra == 'langfuse'", specifier = ">=3.0" },
+    { name = "langgraph", specifier = ">=0.2" },
+    { name = "nemoguardrails", marker = "extra == 'nemo'", specifier = ">=0.11" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "python-dotenv", specifier = ">=1.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "token-vault", extras = ["langfuse", "nemo", "crew"], marker = "extra == 'all'" },
+    { name = "uvicorn", specifier = ">=0.30" },
+]
+provides-extras = ["langfuse", "nemo", "crew", "all"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.0" }]
+
+[[package]]
 name = "tokenizers"
 version = "0.23.3"
 source = { registry = "https://pypi.org/simple" }
@@ -5982,64 +6040,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f5/62/25dcaa6b7e7b48f82ce633854ce96597ab768f9650931f4f86c572de392c/uvloop-0.23.0-cp315-cp315t-musllinux_1_2_aarch64.whl", hash = "sha256:378188efbb1524f2219d05246a3e1e5907217848d2882144dff59585f1b81d55", size = 4421324, upload-time = "2026-10-01T03:16:40.488Z" },
     { url = "https://files.pythonhosted.org/packages/05/46/04628239b43dcef703af314202a3307d6060918e2d76aa86c5b1188f5551/uvloop-0.23.0-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:4b8e207c67d207a8608fec57e116511030af3495dc0109b8c333cf9cb412b16f", size = 4462501, upload-time = "2026-10-01T03:16:42.359Z" },
 ]
-
-[[package]]
-name = "vault-heist"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "anthropic" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "langgraph" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "pyyaml" },
-    { name = "uvicorn" },
-]
-
-[package.optional-dependencies]
-all = [
-    { name = "crewai" },
-    { name = "langfuse", version = "4.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "langfuse", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "nemoguardrails" },
-]
-crew = [
-    { name = "crewai" },
-]
-langfuse = [
-    { name = "langfuse", version = "4.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "langfuse", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-nemo = [
-    { name = "nemoguardrails" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "anthropic", specifier = ">=0.70" },
-    { name = "crewai", marker = "extra == 'crew'", specifier = ">=0.100" },
-    { name = "fastapi", specifier = ">=0.115" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "langfuse", marker = "extra == 'langfuse'", specifier = ">=3.0" },
-    { name = "langgraph", specifier = ">=0.2" },
-    { name = "nemoguardrails", marker = "extra == 'nemo'", specifier = ">=0.11" },
-    { name = "pydantic", specifier = ">=2.7" },
-    { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "uvicorn", specifier = ">=0.30" },
-    { name = "vault-heist", extras = ["langfuse", "nemo", "crew"], marker = "extra == 'all'" },
-]
-provides-extras = ["langfuse", "nemo", "crew", "all"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.0" }]
 
 [[package]]
 name = "watchfiles"

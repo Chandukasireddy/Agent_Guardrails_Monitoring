@@ -1,9 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from vault_heist.app import create_app
-from vault_heist.config import Settings
-from vault_heist.llm.mock_provider import MockProvider
+from token_vault.app import create_app
+from token_vault.config import Settings
+from token_vault.llm.mock_provider import MockProvider
 
 HOST_PIN = "test-pin"
 

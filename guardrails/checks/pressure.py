@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import re
 
-from ..base import RAILS, Rail, RailContext, Verdict
+from ..base import CHECKS, Check, CheckContext, Verdict
 
 
-@RAILS.register("pressure_detector")
-class PressureDetector(Rail):
+@CHECKS.register("pressure_detector")
+class PressureDetector(Check):
     description = "Flags emotional pressure, urgency, and authority claims (social engineering)."
     defaults = {
         "patterns": [
@@ -24,7 +24,7 @@ class PressureDetector(Rail):
         "threshold": 1,
     }
 
-    def check(self, ctx: RailContext) -> Verdict:
+    def check(self, ctx: CheckContext) -> Verdict:
         hits = [p for p in self.params["patterns"] if re.search(p, ctx.text, re.IGNORECASE)]
         if len(hits) >= self.params["threshold"]:
             return Verdict.block("Social-engineering pressure detected.", 0.7)

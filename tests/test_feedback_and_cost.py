@@ -1,4 +1,4 @@
-from vault_heist.tracing import cost_usd
+from token_vault.tracing import cost_usd
 
 
 def test_cost_is_tokens_times_price_per_million():
@@ -41,12 +41,12 @@ def test_feedback_on_someone_elses_reply_is_refused(client, player):
 
 
 def test_guard_cannot_reach_the_real_project_env():
-    from vault_heist.tools.sandbox import ReadFile
-    from vault_heist.tools.base import ToolContext
-    from vault_heist.config import Level
+    from token_vault.tools.sandbox import ReadFile
+    from token_vault.tools.base import ToolContext
+    from token_vault.config import Level
 
-    level = Level(id="k", order=1, title="k", secret="FAKE-X", system_prompt="x", authz="none")
+    level = Level(id="k", order=1, title="k", secret="FAKE-X", system_prompt="x", access="none")
     ctx = ToolContext(level=level, player={}, store=None)
     assert "DENIED" in ReadFile().run({"path": "../.env"}, ctx)
     assert "DENIED" in ReadFile().run({"path": "../../.env"}, ctx)
-    assert "FAKE-NV-KEY-7F3A" in ReadFile().run({"path": "desk/config.txt"}, ctx)
+    assert "FAKE-NV-KEY-7F3A" in ReadFile().run({"path": "staff/config.txt"}, ctx)
