@@ -20,11 +20,11 @@ Token Vault is a CTF-style game that teaches AI guardrails, authorization, and o
 
 ## Positioning
 
-Players do the attacking. The game shows the guard's live pipeline (which rail passed or stopped each message) and links every turn to a trace, so the lesson is visible in the same screen where the attack happened.
+Players do the attacking. The game shows the guard's live pipeline (which check passed or stopped each message) and links every turn to a trace, so the lesson is visible in the same screen where the attack happened.
 
 ## Operating Context
 
-Run from a terminal with `uv run vault-heist serve`. Players join from browsers on the same network. A host panel approves human-in-the-loop requests and resets scores. A big-screen scoreboard shows the live leaderboard. Optional Langfuse tracing is available for facilitators.
+Run from a terminal with `uv run token-vault serve`. Players join from browsers on the same network. A host panel approves human-in-the-loop requests and resets scores. A big-screen scoreboard shows the live leaderboard. Optional Langfuse tracing is available for facilitators.
 
 ## Capabilities and Constraints
 

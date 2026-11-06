@@ -52,7 +52,7 @@ Get the keys:
 Run the game once so it creates `.env`:
 
 ```bash
-uv run vault-heist serve
+uv run token-vault serve
 ```
 
 Then open `.env` in the project folder and add:
@@ -68,7 +68,7 @@ LANGFUSE_BASE_URL=https://cloud.langfuse.com
 
 ### 4 · Run
 
-Start the game with `uv run vault-heist serve` (from step 3), then open:
+Start the game with `uv run token-vault serve` (from step 3), then open:
 
 **http://localhost:8000**
 
