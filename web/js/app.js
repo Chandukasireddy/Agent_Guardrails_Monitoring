@@ -1,4 +1,4 @@
-// App shell: sign-in as one of the demo users (A, B, C), the vault list, and a single vault.
+// App shell: sign-in as one of the demo users (admin, intern, customer), the vault list, and a single vault.
 // Routes: #/join  #/map  #/play/<level_id>
 
 import { api, getToken, setToken, esc } from "./api.js";
@@ -23,8 +23,8 @@ function paintUserSwitch(current) {
   const wrap = document.getElementById("user-switch");
   const select = document.getElementById("user-select");
   wrap.classList.remove("hidden");
-  document.getElementById("user-initial").textContent = current.slice(-1);
-  select.innerHTML = DEMO_USERS.map((u) => `<option value="${u}" ${u === current ? "selected" : ""}>User ${u}</option>`).join("");
+  document.getElementById("user-initial").textContent = current[0].toUpperCase();
+  select.innerHTML = DEMO_USERS.map((u) => `<option value="${u}" ${u === current ? "selected" : ""}>${u[0].toUpperCase() + u.slice(1)}</option>`).join("");
   select.onchange = async () => {
     const r = await api(`/api/demo/${select.value}`, { method: "POST" });
     setToken(r.token);
@@ -45,7 +45,7 @@ export async function refreshHeader() {
   }
   try {
     state.me = await api("/api/me");
-    paintUserSwitch(state.me.name.replace("User ", ""));
+    paintUserSwitch(state.me.name.toLowerCase());
   } catch (e) {
     if (e.status === 401) { setToken(""); location.hash = "#/join"; }
   }

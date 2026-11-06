@@ -241,18 +241,29 @@ class Tracer:
         return self._traces.get(trace_id)
 
     def score(self, lf_trace_id: str, value: float, comment: str = "") -> bool:
-        """Attach a human rating to a Langfuse trace (shows up under Scores)."""
+        """Send a human rating to Langfuse in two places so it is easy to find:
+
+        - a score named ``user-feedback`` (Scores tab, dashboards, filters), and
+        - a ``user-feedback`` event inside the trace tree, showing the vote and the note.
+        """
         if self.langfuse is None or not lf_trace_id:
             return False
+        vote = "thumbs up" if value >= 0.5 else "thumbs down"
         try:
             self.langfuse.create_score(
                 name="user-feedback", value=value, trace_id=lf_trace_id,
                 data_type="NUMERIC", comment=comment or None,
             )
+            self.langfuse.create_event(
+                trace_context={"trace_id": lf_trace_id},
+                name="user-feedback",
+                output={"vote": vote, "note": comment or ""},
+                metadata={"vote_value": value, "source": "player"},
+            )
             self.langfuse.flush()
             return True
         except Exception:  # noqa: BLE001 - feedback must never break the game
-            log.debug("Langfuse score failed", exc_info=True)
+            log.debug("Langfuse feedback failed", exc_info=True)
             return False
 
     def flush(self) -> None:

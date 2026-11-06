@@ -4,7 +4,7 @@ import { api, setToken, esc } from "../api.js";
 import { icon } from "../icons.js";
 import { toast } from "../fx.js";
 
-export const DEMO_USERS = ["A", "B", "C"];
+export const DEMO_USERS = ["admin", "intern", "customer"];
 
 export function renderJoin(view) {
   view.innerHTML = `
@@ -26,8 +26,8 @@ export function renderJoin(view) {
           ${DEMO_USERS.map((u) => `
             <li>
               <button class="user-card" type="button" data-user="${u}">
-                <span class="user-avatar large" aria-hidden="true">${u}</span>
-                <span class="user-copy"><b>User ${u}</b><span class="muted">Continue with this user's progress</span></span>
+                <span class="user-avatar large" aria-hidden="true">${u[0].toUpperCase()}</span>
+                <span class="user-copy"><b>${u[0].toUpperCase() + u.slice(1)}</b><span class="muted">Continue with this user's progress</span></span>
                 <span class="chev" aria-hidden="true">${icon("chevron-right", 18)}</span>
               </button>
             </li>`).join("")}
