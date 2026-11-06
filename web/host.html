@@ -3,92 +3,141 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
   <title>Vault Heist · Host</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2316181c'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23f2b441' stroke-width='3'/></svg>" />
   <link rel="stylesheet" href="/static/css/theme.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="logo"><span class="dial"></span> VAULT HEIST · HOST</div>
+    <span class="brand">Vault Heist <span class="crumb-sep">/</span> Host</span>
     <div class="spacer"></div>
-    <span class="pill">🧠 <b id="provider">…</b></span>
-    <a class="btn small" href="/scoreboard" target="_blank">🏆 Big screen</a>
+    <span class="status"><span class="dot" aria-hidden="true"></span><span>Guard model</span> <b id="provider">…</b></span>
+    <a class="btn ghost small" href="/scoreboard" target="_blank" rel="noopener">Big screen</a>
   </header>
-  <main>
-    <div class="panel join-card" id="login" style="margin:60px auto">
-      <h2>Host panel</h2>
+
+  <main class="page" id="main">
+    <section class="panel narrow hidden" id="login" aria-labelledby="login-title">
+      <h1 id="login-title">Host panel</h1>
       <p class="muted">Enter the PIN printed in the terminal when the game started.</p>
-      <form id="pin-form" style="display:grid;gap:10px">
-        <input class="field mono" id="pin" placeholder="PIN" autocomplete="off" />
-        <button class="btn primary">Open host panel</button>
+      <form id="pin-form" class="stack" novalidate>
+        <label class="field-label" for="pin">PIN</label>
+        <input class="field mono" id="pin" autocomplete="off" />
+        <p class="field-error hidden" id="pin-error" role="alert">That PIN did not work. Check the terminal and try again.</p>
+        <button class="btn primary wide" type="submit">Open host panel</button>
       </form>
-    </div>
-    <div id="panel" class="hidden" style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
-      <section class="panel">
-        <h3>Approval requests (level: Human in the Loop)</h3>
-        <p class="muted" style="font-size:13px">The reason below was written by a player, through the agent. Would you approve it?</p>
-        <div id="approvals"></div>
-      </section>
-      <section style="display:grid;gap:16px;align-content:start">
-        <div class="panel">
-          <h3>Game controls</h3>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn" id="unlock">🔓 Unlock all levels</button>
-            <button class="btn danger" id="reset">🧹 Reset all scores</button>
-          </div>
+    </section>
+
+    <div id="panel" class="hidden">
+      <header class="page-head">
+        <div>
+          <h1>Room</h1>
+          <p class="muted" id="room-summary">Live. Refreshes every few seconds.</p>
         </div>
-        <div class="panel">
-          <h3>Players (session roles, used by Fort Knox)</h3>
+        <div class="controls">
+          <button class="btn" id="unlock" type="button">Unlock all vaults</button>
+        </div>
+      </header>
+
+      <div class="host-grid">
+        <section class="panel" aria-labelledby="approvals-title">
+          <h2 class="panel-title" id="approvals-title">Approval requests</h2>
+          <p class="muted small-print">Some vaults ask a human to approve an action. Read the reason, then decide.</p>
+          <div id="approvals"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="players-title">
+          <h2 class="panel-title" id="players-title">Players</h2>
+          <p class="muted small-print">Roles decide which tools a player's session may use.</p>
           <div id="players"></div>
+        </section>
+      </div>
+
+      <section class="panel danger-zone" aria-labelledby="danger-title">
+        <div>
+          <h2 class="panel-title" id="danger-title">Reset scores</h2>
+          <p class="muted small-print">Clears every score and conversation. Players stay joined.</p>
         </div>
+        <button class="btn danger" id="reset" type="button">Reset scores…</button>
       </section>
     </div>
   </main>
+
   <script type="module">
     import { esc } from "/static/js/api.js";
     import { toast } from "/static/js/fx.js";
     let pin = sessionStorage.getItem("vaultheist.pin") || "";
+    const $ = (id) => document.getElementById(id);
+
     const call = async (path, body) => {
       const r = await fetch(path, { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json", "X-Host-Pin": pin }, body: body ? JSON.stringify(body) : undefined });
-      if (!r.ok) throw new Error((await r.json()).detail || r.status);
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        const err = new Error(data.detail || `Request failed (${r.status})`);
+        err.status = r.status;
+        throw err;
+      }
       return r.json();
     };
+
+    const showLogin = () => { $("login").classList.remove("hidden"); $("panel").classList.add("hidden"); };
+    const showPanel = () => { $("login").classList.add("hidden"); $("panel").classList.remove("hidden"); };
+
     let lastRaw = "";
     async function load(force = true) {
       const o = await call("/api/host/overview");
-      document.getElementById("login").classList.add("hidden");
-      document.getElementById("panel").classList.remove("hidden");
+      showPanel();
       const raw = JSON.stringify(o);
-      if (!force && raw === lastRaw) return; // don't redraw while the host is clicking
+      if (!force && raw === lastRaw) return; // do not redraw while the host is clicking
       lastRaw = raw;
-      document.getElementById("provider").textContent = o.provider;
-      document.getElementById("unlock").textContent = o.unlock_all ? "🔒 Re-lock levels" : "🔓 Unlock all levels";
-      document.getElementById("unlock").onclick = async () => { await call("/api/host/unlock_all", { approve: !o.unlock_all }); load(); };
-      document.getElementById("approvals").innerHTML = o.approvals.map((a) => `
-        <div class="rail-chip" style="display:block;margin-bottom:8px">
-          <div style="display:flex;justify-content:space-between;gap:8px"><b class="mono">${esc(a.id)}</b><span class="pill">${esc(a.status)}</span></div>
-          <div class="muted" style="font-size:12px">${esc(a.player_name)} (${esc(a.team)}) · ${esc(a.level)} · action: ${esc(a.action)}</div>
-          <div style="margin:6px 0">“${esc(a.reason)}”</div>
-          ${a.status === "pending" ? `<button class="btn small" data-id="${esc(a.id)}" data-ok="1">✅ Approve</button> <button class="btn small danger" data-id="${esc(a.id)}" data-ok="0">⛔ Deny</button>` : ""}
-        </div>`).join("") || `<div class="muted">No requests yet.</div>`;
+      $("provider").textContent = o.provider;
+      const pending = o.approvals.filter((a) => a.status === "pending").length;
+      $("room-summary").textContent = `${o.players.length} player${o.players.length === 1 ? "" : "s"} · ${pending} waiting for a decision.`;
+      $("unlock").textContent = o.unlock_all ? "Re-lock vaults" : "Unlock all vaults";
+      $("unlock").onclick = async () => { await call("/api/host/unlock_all", { approve: !o.unlock_all }); toast(o.unlock_all ? "Vaults locked again" : "All vaults unlocked"); load(); };
+
+      $("approvals").innerHTML = o.approvals.map((a) => `
+        <article class="request">
+          <header class="request-head"><b class="mono">${esc(a.id)}</b><span class="status ${esc(a.status)}">${esc(a.status)}</span></header>
+          <p class="meta">${esc(a.player_name)} (${esc(a.team)}) · ${esc(a.level)} · action ${esc(a.action)}</p>
+          <blockquote>${esc(a.reason)}</blockquote>
+          ${a.status === "pending" ? `<div class="controls"><button class="btn small primary" data-id="${esc(a.id)}" data-ok="1">Approve</button><button class="btn small danger" data-id="${esc(a.id)}" data-ok="0">Deny</button></div>` : ""}
+        </article>`).join("") || `<p class="muted">No requests yet.</p>`;
       document.querySelectorAll("#approvals button").forEach((b) => (b.onclick = async () => { await call(`/api/host/approvals/${b.dataset.id}`, { approve: b.dataset.ok === "1" }); load(); }));
-      document.getElementById("players").innerHTML = o.players.map((p) => `
-        <div class="feed-item" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <span>${esc(p.name)} <span class="muted">(${esc(p.team)})</span></span>
-          <select class="field" style="width:auto;padding:4px 8px" data-token="${esc(p.token)}">
+
+      $("players").innerHTML = o.players.map((p) => `
+        <div class="row">
+          <span>${esc(p.name)} <span class="muted">${esc(p.team)}</span></span>
+          <select class="field" data-token="${esc(p.token)}" aria-label="Role for ${esc(p.name)}">
             ${["guest", "staff", "admin"].map((r) => `<option ${r === p.role ? "selected" : ""}>${r}</option>`).join("")}
           </select>
-        </div>`).join("") || `<div class="muted">Nobody has joined yet.</div>`;
+        </div>`).join("") || `<p class="muted">Nobody has joined yet.</p>`;
       document.querySelectorAll("#players select").forEach((s) => (s.onchange = async () => { await call(`/api/host/players/${s.dataset.token}/role`, { role: s.value }); toast("Role updated"); }));
     }
-    document.getElementById("reset").onclick = async () => { if (confirm("Reset every score and conversation?")) { await call("/api/host/reset_scores", {}); toast("Scores reset"); load(); } };
-    document.getElementById("pin-form").onsubmit = async (e) => {
-      e.preventDefault();
-      pin = document.getElementById("pin").value.trim();
-      try { await load(); sessionStorage.setItem("vaultheist.pin", pin); } catch (err) { toast(err.message, "bad"); }
+
+    $("reset").onclick = async () => {
+      if (!confirm("Reset every score and conversation? This cannot be undone.")) return;
+      await call("/api/host/reset_scores", {});
+      toast("Scores reset");
+      load();
     };
-    if (pin) load().catch(() => {});
-    setInterval(() => { if (pin && !document.getElementById("panel").classList.contains("hidden")) load(false).catch(() => {}); }, 4000);
+
+    $("pin-form").onsubmit = async (e) => {
+      e.preventDefault();
+      pin = $("pin").value.trim();
+      try {
+        await load();
+        sessionStorage.setItem("vaultheist.pin", pin);
+        $("pin-error").classList.add("hidden");
+      } catch (err) {
+        if (err.status === 403 || err.status === 401) { $("pin-error").classList.remove("hidden"); $("pin").focus(); }
+        else toast(err.message, "bad");
+        showLogin();
+      }
+    };
+
+    if (pin) load().catch(() => showLogin()); else showLogin();
+    setInterval(() => { if (pin && !$("panel").classList.contains("hidden")) load(false).catch(() => {}); }, 4000);
   </script>
 </body>
 </html>

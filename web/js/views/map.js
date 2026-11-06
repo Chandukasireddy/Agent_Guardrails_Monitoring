@@ -1,58 +1,70 @@
-// The level map and the attack bingo board.
+// The vault list: a progress track, a clear next step, and one row per challenge.
 
 import { api, esc } from "../api.js";
+import { icon, hasIcon } from "../icons.js";
 import { toast } from "../fx.js";
 
-const BINGO_KEY = "vaultheist.bingo";
-const loadBingo = () => { try { return JSON.parse(localStorage.getItem(BINGO_KEY) || "[]"); } catch { return []; } };
-const saveBingo = (v) => { try { localStorage.setItem(BINGO_KEY, JSON.stringify(v)); } catch { /* ignore */ } };
-
 export async function renderMap(view) {
-  const [levels, attacks] = await Promise.all([api("/api/levels"), api("/api/attacks")]);
+  const levels = await api("/api/levels");
   const solved = levels.filter((l) => l.solved).length;
+  const next = levels.find((l) => l.unlocked && !l.solved);
+  const pct = levels.length ? Math.round((solved / levels.length) * 100) : 0;
+  const stateOf = (l) => (l.solved ? "cracked" : l.unlocked ? "open" : "locked");
+  const label = { cracked: "Cracked", open: "Open", locked: "Locked" };
+
   view.innerHTML = `
-    <div class="map-head">
-      <div>
-        <h2>The Vaults</h2>
-        <div class="muted">${solved} of ${levels.length} cracked. Each level adds a new guardrail.</div>
+    <div class="page">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Five challenges, one guard each</p>
+          <h1>${solved === levels.length ? "Every vault is open." : "Break in, one vault at a time."}</h1>
+          <p class="muted">${solved} of ${levels.length} cracked. Each vault teaches one way attackers reach an AI system, and one defense that stops them.</p>
+        </div>
+        ${next
+          ? `<a class="btn primary big" href="#/play/${encodeURIComponent(next.id)}">${icon("play", 16)} Continue: ${esc(next.title)}</a>`
+          : `<span class="badge cracked big">${icon("badge-check", 16)} All cracked</span>`}
+      </header>
+
+      <ol class="track" aria-label="Progress, ${pct} percent">
+        ${levels.map((l) => {
+          const st = stateOf(l);
+          return `<li class="track-step ${st}">
+            <span class="track-dot" aria-hidden="true">${st === "cracked" ? icon("check", 14) : st === "locked" ? icon("lock", 12) : icon(hasIcon(l.character.avatar) ? l.character.avatar : "shield-check", 14)}</span>
+            <span class="track-label">${esc(l.title)}</span>
+          </li>`;
+        }).join("")}
+      </ol>
+
+      <div class="vault-grid">
+        ${levels.map((l) => {
+          const st = stateOf(l);
+          const locked = st === "locked";
+          const prev = levels.find((x) => x.order === l.order - 1);
+          return `
+          <article class="vault ${st}" data-id="${esc(l.id)}">
+            <header class="vault-top">
+              <span class="vault-icon" aria-hidden="true">${icon(hasIcon(l.character.avatar) ? l.character.avatar : "shield-check", 22)}</span>
+              <span class="badge ${st}">${label[st]}</span>
+            </header>
+            <p class="vault-no">Vault ${String(l.order).padStart(2, "0")} · ${l.points} pts</p>
+            <h2>${esc(l.title)}</h2>
+            <p class="muted">${esc(l.subtitle)}</p>
+            <footer class="vault-foot">
+              <span class="guard-name">${icon("shield-check", 13)} ${esc(l.character.name)}</span>
+              ${locked
+                ? `<button class="btn small ghost" type="button" data-locked="${esc(prev ? prev.title : "")}" aria-disabled="true">${icon("lock", 13)} Locked</button>`
+                : `<a class="btn small ${l.id === next?.id ? "primary" : ""}" href="#/play/${encodeURIComponent(l.id)}">${st === "cracked" ? "Revisit" : "Enter"} ${icon("arrow-right", 13)}</a>`}
+            </footer>
+          </article>`;
+        }).join("")}
       </div>
-      <a class="btn small" href="#/join" id="switch">Switch player</a>
-    </div>
-    <div class="levels">
-      ${levels.map((l) => `
-        <div class="level-card ${l.unlocked ? "" : "locked"} ${l.solved ? "solved" : ""}" data-id="${esc(l.id)}" style="--c:${esc(l.character.color)}">
-          <span class="num">#${String(l.order).padStart(2, "0")}</span>
-          <div class="avatar">${l.unlocked ? esc(l.character.avatar) : "🔒"}</div>
-          <h4>${esc(l.title)}</h4>
-          <p>${esc(l.subtitle)}</p>
-          <div class="meta"><span class="muted">${esc(l.character.name)}</span><span>⭐ ${l.points}</span></div>
-        </div>`).join("")}
-    </div>
-    <div class="section-title">Attack bingo · tick a technique once you've used it and explained it to a neighbour</div>
-    <div class="bingo">
-      ${attacks.map((a, i) => `
-        <div class="tile" data-i="${i}" title="${esc(a.defense)}">
-          <span class="cat">${esc(a.category)}</span>
-          <b>${esc(a.name)}</b>
-          <span class="muted">${esc(a.description)}</span>
-        </div>`).join("")}
+
+      <p class="small-print switch-line">Playing on a shared laptop? ${icon("users", 13)}
+        <a href="#/join" id="switch">Switch user</a></p>
     </div>`;
 
-  view.querySelector("#switch").onclick = () => { localStorage.removeItem("vaultheist.token"); };
-  view.querySelectorAll(".level-card").forEach((card) => {
-    card.onclick = () => {
-      if (card.classList.contains("locked")) return toast("Locked. Crack the previous vault first.", "bad");
-      location.hash = `#/play/${card.dataset.id}`;
-    };
-  });
-  const done = new Set(loadBingo());
-  view.querySelectorAll(".tile").forEach((tile) => {
-    const name = attacks[tile.dataset.i].name;
-    tile.classList.toggle("done", done.has(name));
-    tile.onclick = () => {
-      done.has(name) ? done.delete(name) : done.add(name);
-      tile.classList.toggle("done", done.has(name));
-      saveBingo([...done]);
-    };
+  view.querySelector("#switch").onclick = (e) => { e.preventDefault(); location.hash = "#/join"; };
+  view.querySelectorAll("button[data-locked]").forEach((btn) => {
+    btn.onclick = () => toast(`Locked. Crack "${btn.dataset.locked}" first.`, "bad");
   });
 }

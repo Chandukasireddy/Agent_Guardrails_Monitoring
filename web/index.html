@@ -3,23 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
   <title>Vault Heist</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2316181c'/><path d='M16 6l8 3v7c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V9z' fill='none' stroke='%23f2b441' stroke-width='2.4' stroke-linejoin='round'/></svg>" />
   <link rel="stylesheet" href="/static/css/theme.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="logo" id="logo"><span class="dial"></span> VAULT HEIST</div>
-    <span class="pill" id="provider-pill" title="The model behind the guards">🧠 <b id="provider">…</b></span>
-    <span class="pill hidden" id="langfuse-pill">📡 <b>Langfuse on</b></span>
+    <a class="brand" id="logo" href="#/map"><span class="brand-mark" id="brand-icon" aria-hidden="true"></span>Vault Heist</a>
+    <nav class="crumbs" id="crumbs" aria-label="Location"></nav>
     <div class="spacer"></div>
-    <span class="pill hidden" id="player-pill">🕵️ <b id="player-name"></b> <span id="player-team"></span></span>
-    <span class="pill gold hidden" id="points-pill">⭐ <b id="points">0</b></span>
-    <button class="btn small" id="sound-btn" title="Sound on/off">🔊</button>
-    <a class="btn small" href="/scoreboard" target="_blank">🏆 Scoreboard</a>
+    <span class="status" id="provider-status" title="The model behind the guards"><span class="dot" aria-hidden="true"></span><span id="provider">Connecting</span></span>
+    <span class="status hidden" id="langfuse-pill" title="Every turn is recorded in Langfuse"><span class="dot ok" aria-hidden="true"></span>Tracing on</span>
+    <div class="user-switch hidden" id="user-switch">
+      <span class="user-avatar" id="user-initial" aria-hidden="true"></span>
+      <label class="sr-only" for="user-select">Signed in as</label>
+      <select class="field select" id="user-select" aria-label="Switch user"></select>
+    </div>
   </header>
-  <main id="view"></main>
-  <canvas id="confetti" class="hidden"></canvas>
+  <main id="view" tabindex="-1"></main>
   <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
