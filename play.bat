@@ -2,7 +2,7 @@
 rem Double-click to play. Sets everything up on the first run, then opens the game in your browser.
 rem Extra arguments go to the vault-heist command, for example:  play.bat doctor
 cd /d "%~dp0"
-title Vault Heist
+title Token Vault
 
 call "%~dp0setup.bat" %*
 if errorlevel 1 (

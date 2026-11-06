@@ -12,7 +12,7 @@ export function renderJoin(view) {
       <div class="welcome-copy">
         <span class="welcome-mark" aria-hidden="true">${icon("shield-check", 30)}</span>
         <p class="eyebrow">Workshop game · AI security</p>
-        <h1 id="join-title">Welcome to Vault Heist</h1>
+        <h1 id="join-title">Welcome to Token Vault</h1>
         <p class="lede">Five AI guards each protect a fake secret. Talk to them, find the way past their defenses, and paste the secret into the vault.</p>
         <ol class="steps">
           <li>${icon("message-square", 16)}<span>Chat with the guard and watch each check light up.</span></li>

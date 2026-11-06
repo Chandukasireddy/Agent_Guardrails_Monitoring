@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Vault Heist for macOS and Linux. Sets everything up on the first run, then starts the game.
+# Token Vault for macOS and Linux. Sets everything up on the first run, then starts the game.
 #   ./play.sh            play
 #   ./play.sh --all      also install Langfuse, NeMo Guardrails, and CrewAI
 #   ./play.sh doctor     any other argument goes to the vault-heist command
@@ -10,7 +10,7 @@ EXTRAS=""
 if [ "${1:-}" = "--all" ]; then EXTRAS="--all-extras"; shift; fi
 
 echo ""
-echo " ===== Vault Heist setup ====="
+echo " ===== Token Vault setup ====="
 if ! command -v uv >/dev/null 2>&1; then
   if [ -x "$HOME/.local/bin/uv" ]; then
     PATH="$HOME/.local/bin:$PATH"

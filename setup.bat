@@ -1,5 +1,5 @@
 @echo off
-rem Vault Heist setup for Windows. Safe to run again at any time.
+rem Token Vault setup for Windows. Safe to run again at any time.
 rem Installs uv (which installs Python 3.12 for you), the game's packages, and a .env file.
 rem   setup.bat          core game
 rem   setup.bat --all    also Langfuse, NeMo Guardrails, and CrewAI
@@ -9,7 +9,7 @@ set "UV_EXTRAS="
 for %%A in (%*) do if /I "%%~A"=="--all" set "UV_EXTRAS=--all-extras"
 
 echo.
-echo  ===== Vault Heist setup =====
+echo  ===== Token Vault setup =====
 
 where uv >nul 2>nul
 if not errorlevel 1 goto have_uv
