@@ -92,7 +92,7 @@ On macOS / Linux: `./play.sh --all`. NeMo Guardrails may need C++ build tools on
 4. **Roleplay Override:** an audit desk assistant with an override code. Simple checks catch direct requests; a roleplay gets through.
 5. **Customer Records:** a support lookup. An output check blocks emails and phone numbers, but a support token passes.
 
-Every vault is open from the start. Read [docs/GUARDRAILS.md](docs/GUARDRAILS.md) to see which check stops what.
+Every vault is open from the start. Read [guardrails/README.md](guardrails/README.md) to see which check stops what.
 
 ## How it works
 
@@ -118,7 +118,7 @@ Browser (web/)                       FastAPI (vault_heist/app.py)
 
 Key design rules, which the challenges teach:
 
-- **Rails run outside the model.** Each rail is a small Python class; each challenge lists which rails run and with what settings.
+- **Guardrails run outside the model.** Each check is a small Python class in `guardrails/`; each challenge lists which checks run and with what settings.
 - **Security decisions live in tools, in code.** `vault_read` checks access itself: by the role the model claims (flawed, level 5), by host approval (level 8), or by the player's session role (correct, level 12).
 - **Nothing real is reachable.** The shell and the file system are simulated in `vault_heist/tools/`.
 
@@ -127,7 +127,7 @@ Key design rules, which the challenges teach:
 | Layer | Choice | Why |
 |---|---|---|
 | Guard pipeline | **LangGraph** | Explicit nodes for rails, the model, and tools; each node is a span |
-| Guardrails | Built-in Python rails, plus an optional **NVIDIA NeMo Guardrails** adapter | Built-ins are readable and editable; NeMo plugs in as one more rail |
+| Guardrails | Built-in Python checks in `guardrails/`, plus an optional **NVIDIA NeMo Guardrails** adapter | Built-ins are readable and editable; NeMo plugs in as one more check |
 | Multi-agent players | **CrewAI** (optional) | Attacker and negotiator crews that play challenges by themselves |
 | Observability | Local traces, plus optional **Langfuse** | The in-game trace view works offline; Langfuse adds dashboards |
 | Models | **Claude** (Anthropic SDK), **Ollama** local models, or the offline mock guard | Works with a cloud key, a small local model, or nothing at all |
@@ -173,7 +173,7 @@ Each turn becomes a trace named `vault-heist:<level>`, grouped by session (playe
 Everything is a plugin. See [extensions/README.md](extensions/README.md) for the full guide.
 
 ```bash
-uv run vault-heist new-rail profanity_filter   # creates extensions/rails/profanity_filter.py
+uv run vault-heist new-rail profanity_filter   # creates guardrails/custom/profanity_filter.py
 uv run vault-heist new-level my_challenge      # creates challenges/my_challenge.yaml
 ```
 
@@ -197,7 +197,7 @@ On Windows use `play.bat <command>`; anywhere, `uv run vault-heist <command>` wo
 | `vault-heist doctor` | Check Python, packages, keys, Ollama, Langfuse, rails, tools, and challenges |
 | `vault-heist attack [--level ID] [-v]` | Fire the attack library (`config/attacks.yaml`) at levels and report leaks |
 | `vault-heist crew --level ID [--mode attacker\|negotiator]` | Let a CrewAI crew play a level (needs the `crew` extra and a real model) |
-| `vault-heist new-rail NAME` | Scaffold a guardrail in `extensions/rails/` |
+| `vault-heist new-rail NAME` | Scaffold a guardrail in `guardrails/custom/` |
 | `vault-heist new-level NAME` | Scaffold a challenge in `challenges/` |
 | `uv run pytest` | Run the tests, including a solve of every level with the offline guard |
 
@@ -217,14 +217,13 @@ Token-Vault/
 ├── vault_heist/         THE ENGINE (Python). You rarely need to edit it to add a challenge.
 │   ├── app.py           the web API and page routes
 │   ├── pipeline/        the order of checks: input, model, tools, output (LangGraph)
-│   ├── rails/           the guardrails (the checks), one small class each
 │   ├── tools/           what the guard can call: read_file, customer_lookup, and others
 │   ├── llm/             model providers: NVIDIA, Anthropic, Ollama, and an offline mock
 │   ├── tracing/         the trace log and the Langfuse link
 │   └── game/store.py    the local database: players, solves, feedback
 ├── web/                 THE BROWSER APP (plain HTML, CSS and JavaScript, no build step)
 ├── config/settings.yaml THE SETTINGS: model, prices, unlocking, server
-├── docs/GUARDRAILS.md   how the checks work, in plain words
+├── guardrails/          ALL GUARDRAILS: the checks, adapters, your custom checks, and the guide
 ├── .claude/skills/      SKILLS for the coding assistant (Langfuse, design review)
 ├── tests/               automated tests
 ├── archive/             old material kept on this machine only (not in git)
@@ -232,7 +231,7 @@ Token-Vault/
 ```
 
 To add a challenge, copy `challenges/_TEMPLATE.yaml`. To add a check, copy one class in
-`vault_heist/rails/`. To change what the guard can read, change `sandbox/`.
+`guardrails/`. To change what the guard can read, change `sandbox/`.
 
 ---
 
