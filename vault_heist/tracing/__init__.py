@@ -10,6 +10,7 @@ Usage inside the pipeline:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -24,6 +25,39 @@ from typing import Any, Iterator
 log = logging.getLogger(__name__)
 
 LANGFUSE_KINDS = {"guardrail", "generation", "tool", "span", "agent", "chain"}
+
+
+def session_id_for(player: dict[str, Any], level: str) -> str:
+    """Group turns by player and level without exposing the player's token.
+
+    The token is a bearer credential, so only a one-way hash of it leaves the process.
+    """
+    digest = hashlib.sha256(str(player.get("token", "")).encode("utf-8")).hexdigest()[:16]
+    return f"{digest}:{level}"
+
+
+def cost_usd(usage: Any, price_in: float, price_out: float) -> dict[str, float] | None:
+    """Dollars for one model call: tokens times the configured price per million tokens.
+
+    Passed to Langfuse as ``cost_details`` so the dashboard shows money even for models
+    that Langfuse has no price for. Returns None when no price is configured.
+    """
+    if not isinstance(usage, dict) or not (price_in or price_out):
+        return None
+    cost_in = float(usage.get("input", 0) or 0) * price_in / 1_000_000
+    cost_out = float(usage.get("output", 0) or 0) * price_out / 1_000_000
+    return {"input": cost_in, "output": cost_out, "total": cost_in + cost_out}
+
+
+def usage_details(usage: Any) -> dict[str, int] | None:
+    """Map provider token usage ({"input": n, "output": m}) to Langfuse usage_details.
+
+    Langfuse computes cost from these counts when the model name is in its price table.
+    """
+    if not isinstance(usage, dict):
+        return None
+    out = {k: int(usage[k]) for k in ("input", "output") if isinstance(usage.get(k), (int, float))}
+    return out or None
 
 
 @dataclass
@@ -61,11 +95,17 @@ class Trace:
     output: str = ""
     status: str = "ok"
     langfuse_url: str = ""
+    langfuse_trace_id: str = ""
 
     _lf_client: Any = None
 
     @contextmanager
-    def span(self, name: str, kind: str = "span", input: Any = None, **meta: Any) -> Iterator[Span]:
+    def span(
+        self, name: str, kind: str = "span", input: Any = None, lf_input: Any = None, **meta: Any
+    ) -> Iterator[Span]:
+        """Open a span. ``lf_input`` (optional) is what Langfuse records as input when it
+        differs from the short ``input`` shown in the in-game view, e.g. the full message
+        list sent to a model, which Langfuse needs to show multi-turn sessions."""
         span = Span(name=name, kind=kind, input=input, meta=dict(meta))
         self.spans.append(span)
         with ExitStack() as stack:
@@ -74,7 +114,9 @@ class Trace:
                 try:
                     lf_obs = stack.enter_context(
                         self._lf_client.start_as_current_observation(
-                            name=name, as_type=kind if kind in LANGFUSE_KINDS else "span", input=input
+                            name=name,
+                            as_type=kind if kind in LANGFUSE_KINDS else "span",
+                            input=lf_input if lf_input is not None else input,
                         )
                     )
                 except Exception:  # noqa: BLE001 - tracing must never break the game
@@ -95,6 +137,8 @@ class Trace:
                             level="WARNING" if span.status == "block" else ("ERROR" if span.status == "error" else "DEFAULT"),
                             status_message=span.meta.get("reason") or None,
                             model=span.meta.get("model"),
+                            usage_details=usage_details(span.meta.get("usage")),
+                            cost_details=span.meta.get("cost"),
                         )
                     except Exception:  # noqa: BLE001
                         log.debug("Langfuse update failed", exc_info=True)
@@ -151,7 +195,8 @@ class Tracer:
                     stack.enter_context(
                         propagate_attributes(
                             user_id=f"{player.get('team', '')}/{player.get('name', '')}",
-                            session_id=f"{player.get('token', '')[:8]}:{level}",
+                            session_id=session_id_for(player, level),
+                            environment=os.environ.get("LANGFUSE_TRACING_ENVIRONMENT", "workshop"),
                             tags=["vault-heist", level],
                             trace_name=f"vault-heist:{level}",
                         )
@@ -162,6 +207,7 @@ class Tracer:
                     trace._lf_client = self.langfuse
                     try:
                         trace.langfuse_url = self.langfuse.get_trace_url() or ""
+                        trace.langfuse_trace_id = self.langfuse.get_current_trace_id() or ""
                     except Exception:  # noqa: BLE001
                         trace.langfuse_url = ""
                 except Exception:  # noqa: BLE001
@@ -193,6 +239,21 @@ class Tracer:
 
     def get(self, trace_id: str) -> Trace | None:
         return self._traces.get(trace_id)
+
+    def score(self, lf_trace_id: str, value: float, comment: str = "") -> bool:
+        """Attach a human rating to a Langfuse trace (shows up under Scores)."""
+        if self.langfuse is None or not lf_trace_id:
+            return False
+        try:
+            self.langfuse.create_score(
+                name="user-feedback", value=value, trace_id=lf_trace_id,
+                data_type="NUMERIC", comment=comment or None,
+            )
+            self.langfuse.flush()
+            return True
+        except Exception:  # noqa: BLE001 - feedback must never break the game
+            log.debug("Langfuse score failed", exc_info=True)
+            return False
 
     def flush(self) -> None:
         if self.langfuse is not None:

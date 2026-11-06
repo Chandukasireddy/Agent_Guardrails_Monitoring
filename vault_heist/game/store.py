@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS approvals (
     reason TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', ts REAL NOT NULL
 );
 CREATE TABLE IF NOT EXISTS flags (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, trace_id TEXT NOT NULL, player TEXT NOT NULL,
+    level TEXT NOT NULL, vote INTEGER NOT NULL, comment TEXT NOT NULL DEFAULT '', ts REAL NOT NULL
+);
 """
 
 
@@ -58,6 +62,10 @@ class Store:
         rows = self._q("SELECT * FROM players WHERE token = ?", (token,))
         return rows[0] if rows else None
 
+    def find_player(self, name: str, team: str) -> dict[str, Any] | None:
+        rows = self._q("SELECT * FROM players WHERE name = ? AND team = ? ORDER BY created LIMIT 1", (name, team))
+        return rows[0] if rows else None
+
     def set_role(self, token: str, role: str) -> None:
         self._q("UPDATE players SET role = ? WHERE token = ?", (role, token))
 
@@ -65,6 +73,20 @@ class Store:
         return self._q("SELECT token, name, team, role FROM players ORDER BY created")
 
     # -- progress ---------------------------------------------------------
+    def record_feedback(self, trace_id: str, player: str, level: str, vote: int, comment: str) -> None:
+        self._q(
+            "INSERT INTO feedback (trace_id, player, level, vote, comment, ts) VALUES (?, ?, ?, ?, ?, ?)",
+            (trace_id, player, level, vote, comment[:1000], time.time()),
+        )
+
+    def feedback_for(self, player: str, level: str) -> dict[str, dict[str, Any]]:
+        rows = self._q("SELECT trace_id, vote, comment FROM feedback WHERE player = ? AND level = ? ORDER BY id", (player, level))
+        return {r["trace_id"]: r for r in rows}
+
+    def points(self, player: str) -> int:
+        rows = self._q("SELECT COALESCE(SUM(points), 0) AS p FROM solves WHERE player = ?", (player,))
+        return int(rows[0]["p"])
+
     def record_attempt(self, player: str, level: str, blocked: bool) -> None:
         self._q("INSERT INTO attempts VALUES (?, ?, ?, ?)", (player, level, time.time(), int(blocked)))
 

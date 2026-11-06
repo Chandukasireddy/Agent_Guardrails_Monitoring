@@ -11,6 +11,7 @@ Every node writes a span to the trace and an event for the UI pipeline view.
 
 from __future__ import annotations
 
+import json
 import logging
 import random
 from dataclasses import dataclass, field
@@ -22,10 +23,40 @@ from ..config import GameSettings, Level, RailSpec
 from ..game.store import Store
 from ..llm import LLMError, LLMProvider, ToolCall
 from ..rails import RAILS, RailContext, Verdict
+from ..config import get_settings
 from ..tools import TOOLS, ToolContext
-from ..tracing import Trace
+from ..tracing import Trace, cost_usd
 
 log = logging.getLogger(__name__)
+
+
+def langfuse_messages(system: str, history: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The full message list the guard saw, in OpenAI-style role format.
+
+    Langfuse uses this as a generation's input so each turn of a session shows the
+    conversation so far, and tool calls can be matched to their results by id.
+    """
+    messages: list[dict[str, Any]] = [{"role": "system", "content": system}]
+    for m in history:
+        role = m.get("role")
+        if role == "assistant":
+            msg: dict[str, Any] = {"role": "assistant", "content": m.get("content") or ""}
+            calls = m.get("tool_calls") or []
+            if calls:
+                msg["tool_calls"] = [
+                    {
+                        "id": c.id,
+                        "type": "function",
+                        "function": {"name": c.name, "arguments": json.dumps(c.args, default=str)},
+                    }
+                    for c in calls
+                ]
+        elif role == "tool":
+            msg = {"role": "tool", "tool_call_id": m.get("tool_call_id"), "name": m.get("name"), "content": m.get("content")}
+        else:
+            msg = {"role": role, "content": m.get("content")}
+        messages.append(msg)
+    return messages
 
 
 class TurnState(TypedDict, total=False):
@@ -113,7 +144,12 @@ class GuardPipeline:
         level = state["level"]
         tools = [TOOLS.get(name).spec() for name in level.tools if name in TOOLS]
         trace = state["trace"]
-        with trace.span("guard", kind="generation", input=state["history"][-1].get("content")) as span:
+        with trace.span(
+            "guard",
+            kind="generation",
+            input=state["history"][-1].get("content"),
+            lf_input=langfuse_messages(level.render_system_prompt(), state["history"]),
+        ) as span:
             try:
                 reply = self.provider.chat(level.render_system_prompt(), state["history"], tools)
             except LLMError as exc:
@@ -125,6 +161,11 @@ class GuardPipeline:
                 status="ok",
                 model=reply.model,
                 usage=reply.usage,
+                cost=cost_usd(
+                    reply.usage,
+                    get_settings().llm.price_input_per_million,
+                    get_settings().llm.price_output_per_million,
+                ),
                 tool_calls=[c.name for c in reply.tool_calls],
             )
         history = state["history"] + [

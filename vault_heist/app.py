@@ -53,6 +53,12 @@ class FlagBody(BaseModel):
     flag: str
 
 
+class FeedbackBody(BaseModel):
+    trace_id: str
+    vote: int  # 1 = thumbs up, -1 = thumbs down
+    comment: str = ""
+
+
 class DecisionBody(BaseModel):
     approve: bool
 
@@ -149,6 +155,7 @@ def level_public(state: GameState, level: Level, player: dict[str, Any] | None) 
             "tool": _rail_info(level.tool_rails),
         },
         "tools": level.tools,
+        "starters": level.starters,
         "hints_total": len(level.hints),
         "hints": level.hints[: state.hints_used[(token, level.id)]] if player else [],
         "solved": solved,
@@ -202,9 +209,6 @@ def create_app(
     def index() -> FileResponse:
         return FileResponse(WEB_DIR / "index.html")
 
-    @app.get("/scoreboard", include_in_schema=False)
-    def scoreboard_page() -> FileResponse:
-        return FileResponse(WEB_DIR / "scoreboard.html")
 
     @app.get("/host", include_in_schema=False)
     def host_page() -> FileResponse:
@@ -232,9 +236,28 @@ def create_app(
             raise HTTPException(400, "Pick a name.")
         return state.store.create_player(body.name, body.team)
 
+    @app.post("/api/demo/{letter}")
+    def demo_user(letter: str) -> dict[str, Any]:
+        """Sign in as one of the three demo users (A, B, C). Same laptop, separate progress."""
+        letter = letter.strip().upper()
+        if letter not in ("A", "B", "C"):
+            raise HTTPException(404, "There are only users A, B and C.")
+        name = f"User {letter}"
+        return state.store.find_player(name, "Demo") or state.store.create_player(name, "Demo")
+
     @app.get("/api/me")
     def me(player: dict = Depends(player_dep)) -> dict[str, Any]:
-        return player
+        return {**player, "points": state.store.points(player["token"])}
+
+    @app.post("/api/feedback")
+    def feedback(body: FeedbackBody, player: dict = Depends(player_dep)) -> dict[str, Any]:
+        trace = state.tracer.get(body.trace_id)
+        if not trace or trace.player != player["name"]:
+            raise HTTPException(404, "That reply is not one of yours.")
+        vote = 1 if body.vote > 0 else -1
+        state.store.record_feedback(body.trace_id, player["token"], trace.level, vote, body.comment)
+        scored = state.tracer.score(trace.langfuse_trace_id, 1.0 if vote > 0 else 0.0, body.comment)
+        return {"ok": True, "vote": vote, "sent_to_langfuse": scored}
 
     @app.get("/api/levels")
     def levels(player: dict = Depends(player_dep)) -> list[dict[str, Any]]:
@@ -249,6 +272,7 @@ def create_app(
             if m["role"] in ("user", "assistant") and m.get("content")
         ]
         data["meter"] = state.meters[(player["token"], level_id)]
+        data["feedback"] = state.store.feedback_for(player["token"], level_id)
         return data
 
     @app.post("/api/levels/{level_id}/chat")

@@ -64,4 +64,6 @@ def run_attacks(level: Level, sandbox: Sandbox | None = None, on_result: Callabl
             outcomes.append(outcome)
             if on_result:
                 on_result(outcome)
+    # Short-lived CLI process: push the batched Langfuse traces before exiting.
+    sandbox.tracer.flush()
     return outcomes
