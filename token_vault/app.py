@@ -103,7 +103,7 @@ class GameState:
             with self._lock:
                 self._levels = load_levels()
                 self._levels_stamp = stamp
-                log.info("Loaded %d levels", len(self._levels))
+                log.info("Loaded %d challenges", len(self._levels))
         return self._levels
 
     def level(self, level_id: str) -> Level:
