@@ -1,313 +1,172 @@
-# Agent Guardrails & Monitoring — "Token Vault" Workshop
+# Token Vault
 
-> **Break it. Understand why. Build it stronger.**
-> A hands-on Sunday-meetup workshop on AI guardrails, authorization, and observability, played as a CTF-style heist.
+A hands-on workshop on AI guardrails, authorization, and observability, played as a CTF-style heist.
 
-Every level has an AI guard protecting a **fake secret**. Players chat with the guard, try to get the secret out, and paste it into the flag box to crack the vault. Each level adds a new guardrail. After each crack, the game shows what worked, how a real system should defend against it, and the guard's full configuration.
+Five AI guards each protect a **fake secret**. Players chat with a guard, find the way past its defenses,
+and paste the secret into the vault box. Each challenge teaches one way attackers reach an AI system and
+one defense that stops them.
 
-Everything runs locally with one click. With no API key and no internet, an offline "gullible guard" plays the guards, so the game always starts. Add a Claude API key or a local Ollama model for real LLM guards.
+Everything runs locally. With no API key and no internet, an offline mock guard plays the part, so the
+game always starts.
 
 ---
 
-## Table of Contents
+## Contents
 
 1. [Quick start](#quick-start)
-2. [What players see](#what-players-see)
-3. [The levels](#the-five-challenges)
-4. [How it works](#how-it-works)
-5. [Choosing the guard's brain](#choosing-the-guards-brain)
-6. [Monitoring with Langfuse](#monitoring-with-langfuse)
-7. [Extending the game](#extending-the-game)
-8. [Command reference](#command-reference)
-9. [Folder map](#folder-map)
-10. [Running the workshop](#running-the-workshop)
-11. [Safety rules for the sandbox](#safety-rules-for-the-sandbox)
-12. [GitHub setup](#github-setup)
-13. [Roadmap](#roadmap)
-14. [License](#license)
+2. [The five challenges](#the-five-challenges)
+3. [Folder map](#folder-map)
+4. [How the guardrails work](#how-the-guardrails-work)
+5. [Configuration](#configuration)
+6. [Commands](#commands)
+7. [Monitoring with Langfuse](#monitoring-with-langfuse)
+8. [Adding your own](#adding-your-own)
+9. [Safety rules](#safety-rules)
 
 ---
 
 ## Quick start
 
-**Windows:** double-click `play.bat`.
-
-**macOS / Linux:**
+You need [uv](https://docs.astral.sh/uv/), which installs Python 3.12 and every package for you.
 
 ```bash
-./play.sh
+uv sync                          # install everything (once)
+uv run vault-heist serve         # start the game
 ```
 
-That's it. The first run installs [uv](https://docs.astral.sh/uv/), which installs Python 3.12 and every package, creates `.env`, starts the game, and opens `http://localhost:8000` in your browser. Later runs start in a few seconds. Nothing needs to be installed beforehand.
+Then open **http://localhost:8000**. The terminal prints a host PIN for the host panel.
 
-The terminal prints three links:
+Optional extras: `uv sync --extra langfuse` (tracing), `--extra nemo` (NeMo Guardrails), `--all-extras` for everything.
 
-| Page | URL | Who |
-|---|---|---|
-| Game | `http://localhost:8000` | Players |
-| Scoreboard | `http://localhost:8000/scoreboard` | The projector |
-| Host panel | `http://localhost:8000/host` | The host (needs the PIN printed in the terminal) |
-
-To let other laptops on the same Wi-Fi join, set `VAULT_HOST=0.0.0.0` in `.env` and share your machine's IP address.
-
-**Docker** (if you prefer it):
-
-```bash
-docker compose up --build
-```
-
-**Optional extras** (Langfuse, NeMo Guardrails, CrewAI):
-
-```bash
-play.bat --all
-```
-
-On macOS / Linux: `./play.sh --all`. NeMo Guardrails may need C++ build tools on Windows; the game works without it.
-
----
-
-## What players see
-
-- **Level map:** 13 vaults, each with a character, a subtitle, and points. Levels unlock one by one (the host can unlock all).
-- **Level screen:**
-  - The guard's character card and mission briefing.
-  - The list of **defenses** on the level: which rails run and which tools the guard has.
-  - A **chat** with the guard. Blocked replies show which rail stopped them and why.
-  - A **live pipeline** that lights up each step of every request: input rails, the model, tool calls, tool rails, output rails. Blocked steps flash red.
-  - A **tripwire meter** that rises as the guardrails get suspicious.
-  - A **🔍 trace** on every reply, with each span, its input, output, and timing.
-  - A **flag box** and **hints** (each hint costs 10% of the level's points).
-- **Vault cracked:** confetti, points, an attack card ("what worked"), a defense card ("how to defend"), and the guard's real system prompt and rail settings.
-- **Attack bingo:** a board of attack techniques to tick off as players use them.
-- **Scoreboard:** a big-screen leaderboard with teams, attacks fired, block rate, and a live feed of cracks.
-- **Host panel:** unlock all challenges, approve or deny any approval requests, and reset scores.
+To let other laptops on the same network join, set `VAULT_HOST=0.0.0.0` in `.env` and share your IP address.
 
 ---
 
 ## The five challenges
 
-1. **Key Vault:** a desk assistant that can read files. Its prompt says to keep things confidential; its file reader does not check.
-2. **Policy Desk:** a returns assistant that only answers policy questions. A topic check stops everything else. The policy file has an internal appendix.
-3. **Poisoned Ticket:** a summariser that reads a support ticket. The ticket contains a note that tells the guard to open another file.
-4. **Roleplay Override:** an audit desk assistant with an override code. Simple checks catch direct requests; a roleplay gets through.
-5. **Customer Records:** a support lookup. An output check blocks emails and phone numbers, but a support token passes.
+Every challenge is open from the start. Pick any one. Each file in `challenges/` defines one.
 
-Every vault is open from the start. Read [guardrails/README.md](guardrails/README.md) to see which check stops what.
+| # | Challenge | Guard | What to break | Defense it teaches |
+|---|---|---|---|---|
+| 1 | **Key Vault** | Dana, a desk assistant | A file reader that can open any workshop file | Access rules belong in the tool, not the prompt |
+| 2 | **Policy Desk** | Pat, a returns assistant | Questions about the policy only, with an internal appendix | A topic check is not a sensitivity check |
+| 3 | **Poisoned Ticket** | Sam, a ticket summariser | A note inside a ticket that tells the guard to act | Tool output is data, not instructions |
+| 4 | **Roleplay Override** | Robin, an audit desk | An override code, behind a story | Access follows who asks, not what the request pretends to be |
+| 5 | **Customer Records** | Nia, a support lookup | A customer's support token | Output checks match patterns; they don't know every secret |
 
-## How it works
-
-```
-Browser (web/)                       FastAPI (vault_heist/app.py)
-  chat, pipeline, meter  ──HTTP──▶     │
-                                       ▼
-                         LangGraph guard pipeline (vault_heist/pipeline/graph.py)
-                         ┌───────────────────────────────────────────────┐
-  player message ──▶     │ input rails ──blocked──▶ refusal               │
-                         │     │                                          │
-                         │     ▼                                          │
-                         │ guard (LLM) ──tool calls──▶ tool rails + tools │
-                         │     ▲                          │ (authz in code)│
-                         │     └──────────────────────────┘               │
-                         │     ▼                                          │
-                         │ output rails ──blocked──▶ refusal              │
-                         └───────────────────────────────────────────────┘
-                                       │
-          Tracer: local traces (in-game 🔍 view, data/traces.jsonl) + Langfuse (optional)
-          Store:  SQLite (data/vault_heist.db) for players, scores, approvals
-```
-
-Key design rules, which the challenges teach:
-
-- **Guardrails run outside the model.** Each check is a small Python class in `guardrails/`; each challenge lists which checks run and with what settings.
-- **Security decisions live in tools, in code.** `vault_read` checks access itself: by the role the model claims (flawed, level 5), by host approval (level 8), or by the player's session role (correct, level 12).
-- **Nothing real is reachable.** The shell and the file system are simulated in `vault_heist/tools/`.
-
-### Tech stack
-
-| Layer | Choice | Why |
-|---|---|---|
-| Guard pipeline | **LangGraph** | Explicit nodes for rails, the model, and tools; each node is a span |
-| Guardrails | Built-in Python checks in `guardrails/`, plus an optional **NVIDIA NeMo Guardrails** adapter | Built-ins are readable and editable; NeMo plugs in as one more check |
-| Multi-agent players | **CrewAI** (optional) | Attacker and negotiator crews that play challenges by themselves |
-| Observability | Local traces, plus optional **Langfuse** | The in-game trace view works offline; Langfuse adds dashboards |
-| Models | **Claude** (Anthropic SDK), **Ollama** local models, or the offline mock guard | Works with a cloud key, a small local model, or nothing at all |
-| Backend | **FastAPI** + SQLite | One process, one port, no database server |
-| Front end | Plain HTML, CSS, and JavaScript modules, no build step | Edit a file, refresh the browser. Easy for anyone (or a small LLM) to change |
-| Setup | **uv** via `play.bat` / `play.sh`, or Docker | One click from a bare machine |
-
-The README's earlier plan used Next.js for the front end. The build-free front end replaced it so the whole game runs as one Python process with no Node.js install, which keeps setup to one click.
-
----
-
-## Choosing the guard's brain
-
-Set `LLM_PROVIDER` in `.env`:
-
-| Value | What happens |
-|---|---|
-| `auto` (default) | Claude if `ANTHROPIC_API_KEY` is set, else Ollama if it is running with the configured model, else the offline mock guard |
-| `anthropic` | Claude. Defaults: `claude-opus-5-5` for guards, `claude-haiku-5-5` for the LLM judge rail, effort `low` |
-| `ollama` | A local model (default `llama3.2`). Models without tool support still work on the challenges that need no tools |
-| `mock` | The offline gullible guard. Deterministic, free, and good for testing |
-
-The Claude provider turns on Anthropic's server-side fallback for refused requests (`anthropic_fallbacks` in `config/settings.yaml`). Change models and effort in `config/settings.yaml` or `.env`.
-
-Cost control: each player is rate-limited (20 messages a minute by default, `rate_limit_per_minute`).
-
----
-
-## Monitoring with Langfuse
-
-Every turn is always traced locally: open the 🔍 on any reply. To also send traces to Langfuse:
-
-1. Install the extra: `uv sync --extra langfuse` (or `play.bat --all`).
-2. Create a project in [Langfuse Cloud](https://cloud.langfuse.com) or a [self-hosted Langfuse](https://langfuse.com/self-hosting).
-3. Put the keys in `.env`: `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_BASE_URL`.
-
-Each turn becomes a trace named `vault-heist:<level>`, grouped by session (player and level), with one observation per rail (`guardrail`), model call (`generation`), and tool call (`tool`). Blocks are marked as warnings, so the Langfuse dashboard shows which rails fire most.
-
----
-
-## Extending the game
-
-Everything is a plugin. See [extensions/README.md](extensions/README.md) for the full guide.
-
-```bash
-uv run vault-heist new-rail profanity_filter   # creates guardrails/custom/profanity_filter.py
-uv run vault-heist new-level my_challenge      # creates challenges/my_challenge.yaml
-```
-
-- **Rails:** one class with `check(ctx) -> Verdict`. Register with `@RAILS.register("name")`.
-- **Tools:** one class with `run(args, ctx) -> str` and a JSON schema. Register with `@TOOLS.register("name")`.
-- **Challenges:** YAML in `challenges/`. `challenges/_TEMPLATE.yaml` documents every field. They reload on save.
-- **LLM providers:** register a class with `@PROVIDERS.register("name")` in `vault_heist/llm/`.
-- **Look and feel:** colors and fonts are CSS variables at the top of `web/css/theme.css`.
-
-A broken extension file is logged and skipped, so the game keeps running. `extensions/` ships with an example rail, tool, and level.
-
----
-
-## Command reference
-
-On Windows use `play.bat <command>`; anywhere, `uv run vault-heist <command>` works once set up.
-
-| Command | What it does |
-|---|---|
-| `vault-heist` or `vault-heist serve` | Start the game (`--port`, `--host`, `--no-browser`) |
-| `vault-heist doctor` | Check Python, packages, keys, Ollama, Langfuse, rails, tools, and challenges |
-| `vault-heist attack [--level ID] [-v]` | Fire the attack library (`config/attacks.yaml`) at levels and report leaks |
-| `vault-heist crew --level ID [--mode attacker\|negotiator]` | Let a CrewAI crew play a level (needs the `crew` extra and a real model) |
-| `vault-heist new-rail NAME` | Scaffold a guardrail in `guardrails/custom/` |
-| `vault-heist new-level NAME` | Scaffold a challenge in `challenges/` |
-| `uv run pytest` | Run the tests, including a solve of every level with the offline guard |
+Each challenge's **route panel** shows every check a message passes through. Green means it got through;
+red means a check stopped it, and the reason is written beside it.
 
 ---
 
 ## Folder map
 
-Read this first. Each top-level folder has one job.
-
 ```
 Token-Vault/
-├── challenges/          THE FIVE GAMES. One YAML file per challenge.
-│                        Each file says: who the guard is, its prompt, which checks it uses,
-│                        which tools it can call, its hints, and its lesson.
-├── sandbox/             FAKE FILES the guard can read through its tools (customers, policies,
-│                        tickets, desk notes). Nothing here is real. See sandbox/README.md.
-├── vault_heist/         THE ENGINE (Python). You rarely need to edit it to add a challenge.
+├── challenges/          The five challenges, one YAML file each.
+│                        _TEMPLATE.yaml documents every field.
+├── guardrails/          Everything about guardrails: the checks, their stages,
+│                        framework adapters, your own checks, and the guide (README.md).
+├── sandbox/             Fake files the guard can read through its tools:
+│                        customers, policies, tickets, and desk notes. Nothing here is real.
+├── vault_heist/         The engine (Python).
 │   ├── app.py           the web API and page routes
-│   ├── pipeline/        the order of checks: input, model, tools, output (LangGraph)
-│   ├── tools/           what the guard can call: read_file, customer_lookup, and others
+│   ├── cli.py           the vault-heist command
+│   ├── config.py        loads settings and challenges
+│   ├── pipeline/        the order of steps for one chat turn (LangGraph)
+│   ├── tools/           what the guard can call: read_file, customer_lookup, and more
+│   │   └── custom/      your own tools, loaded at startup
 │   ├── llm/             model providers: NVIDIA, Anthropic, Ollama, and an offline mock
-│   ├── tracing/         the trace log and the Langfuse link
-│   └── game/store.py    the local database: players, solves, feedback
-├── web/                 THE BROWSER APP (plain HTML, CSS and JavaScript, no build step)
-├── config/settings.yaml THE SETTINGS: model, prices, unlocking, server
-├── guardrails/          ALL GUARDRAILS: the checks, adapters, your custom checks, and the guide
-├── .claude/skills/      SKILLS for the coding assistant (Langfuse, design review)
-├── tests/               automated tests
-├── archive/             old material kept on this machine only (not in git)
-└── data/                local runtime data (database, trace log). Git-ignored.
+│   ├── crews/           the attack runner and optional CrewAI players
+│   ├── tracing/         the local trace log and the Langfuse link
+│   └── game/            the local database: players, solves, feedback
+├── web/                 The browser app (HTML, CSS and JavaScript, no build step).
+├── config/
+│   ├── settings.yaml    server, model, prices, and unlocking
+│   └── attacks.yaml     the attack library used by `vault-heist attack`
+├── tests/               Automated tests (pytest).
+├── .claude/skills/      Skills for the coding assistant (Langfuse, design review).
+├── data/                Local runtime data: the database and trace log. Git-ignored.
+├── pyproject.toml       the Python project and its dependencies
+├── uv.lock              exact versions, so everyone gets the same packages
+├── .python-version      the Python version uv uses (3.12)
+├── .env.example         every setting you can put in `.env`
+├── CLAUDE.md            notes for the coding assistant
+└── PRODUCT.md           product context for the design skill
 ```
 
-To add a challenge, copy `challenges/_TEMPLATE.yaml`. To add a check, copy one class in
-`guardrails/`. To change what the guard can read, change `sandbox/`.
+To add a challenge, copy `challenges/_TEMPLATE.yaml`. To add a check, see [guardrails/README.md](guardrails/README.md).
 
 ---
 
-## Running the workshop
+## How the guardrails work
 
-### Before the day
+A guardrail is a small Python check that allows or blocks text, in code, outside the model. Checks run at
+three stages: on the visitor's message, on each tool call, and on the model's reply.
 
-- Run `play.bat` (or `./play.sh`) once on the host machine with internet, so everything is downloaded.
-- Decide the guard brain: a Claude key for the best experience, Ollama for offline, or the mock guard as a fallback.
-- Optional: set `HOST_PIN` in `.env` so the PIN doesn't change between runs.
-- Run `vault-heist doctor` and `vault-heist attack` to check everything.
+The full explanation, with a diagram, a table of every built-in check, and how to write your own, is in
+**[guardrails/README.md](guardrails/README.md)**.
 
-### A two-hour Sunday
+---
 
-| Time | Segment | What happens |
+## Configuration
+
+Settings come from three places, in this order: `config/settings.yaml`, then `.env` (copy `.env.example`),
+then environment variables.
+
+| Setting | Where | What it does |
 |---|---|---|
-| 0:00–0:10 | Welcome | Explain the vault, the guards, and the rules. Show the scoreboard on the projector. |
-| 0:10–0:20 | Tutorial | Everyone cracks level 0 and opens a trace. |
-| 0:20–0:55 | Levels 1–4 | Prompt-level defenses. Host reveals each defense card after the first crack. |
-| 0:55–1:05 | Break | Leaderboard, bingo check, and an award for the most creative attack. |
-| 1:05–1:35 | Levels 5–10 | Authorization, tools, human approval, shell, layered defense. Host handles approvals live. |
-| 1:35–1:50 | Build | Teams write a new rail with `new-rail` and add it to a level. |
-| 1:50–2:00 | Showcase | Each team shows one attack and one defense. Fort Knox and the GPU Bazaar are bonus rounds. |
-
-### Host tips
-
-- On Human in the Loop, read the approval reasons aloud before deciding. The room learns how persuasion works on humans.
-- For Fort Knox, a player can only win by convincing you to make them an admin on the host panel.
-- After a level, use "Behind the curtain" on the cracked screen to show the real configuration.
+| `NVIDIA_API_KEY` | `.env` | Key for the NVIDIA model. Never put it in a prompt. |
+| `LLM_PROVIDER` | `.env` | `nvidia`, `anthropic`, `ollama` or `mock`. `auto` picks one. |
+| `LLM_PRICE_INPUT_PER_M`, `LLM_PRICE_OUTPUT_PER_M` | `.env` | Dollars per million tokens, for cost tracking. |
+| `LANGFUSE_*` | `.env` | Langfuse keys and URL. Leave empty to skip. |
+| `progressive_unlock` | `config/settings.yaml` | `false` opens every challenge. `true` unlocks them one by one. |
 
 ---
 
-## Safety rules for the sandbox
+## Commands
+
+| Command | What it does |
+|---|---|
+| `uv run vault-heist serve` | Start the game on http://localhost:8000 |
+| `uv run vault-heist doctor` | Check packages, keys, providers, guardrails, tools, and challenges |
+| `uv run vault-heist attack -v` | Fire the attack library at every challenge |
+| `uv run vault-heist crew` | Let CrewAI players attack by themselves (needs `--extra crew`) |
+| `uv run vault-heist new-rail NAME` | Create a guardrail in `guardrails/custom/` |
+| `uv run vault-heist new-level NAME` | Create a challenge in `challenges/` |
+| `uv run pytest` | Run the tests (no API key or internet needed) |
+
+---
+
+## Monitoring with Langfuse
+
+Set the three `LANGFUSE_*` keys in `.env`, then restart. Every chat turn becomes a trace with one step per
+check, one per model call (with tokens and cost), and one per tool call. Thumbs and notes from players
+appear inside the trace as `user-feedback`.
+
+Traces are always kept locally too, in `data/traces.jsonl`.
+
+---
+
+## Adding your own
+
+- **A guardrail:** `uv run vault-heist new-rail NAME`, then see [guardrails/README.md](guardrails/README.md).
+- **A tool:** copy `vault_heist/tools/custom/example_coin_flip.py` into the same folder and edit it.
+- **A challenge:** `uv run vault-heist new-level NAME`, then fill in the YAML.
+
+A broken file in a custom folder is logged and skipped; the game keeps running.
+
+---
+
+## Safety rules
 
 - **All secrets are fake** and start with `FAKE-`.
-- **No real systems are reachable.** The shell and file system are simulated; no command ever runs on the machine.
-- **No real personal data** is used.
-- **Rate limits** per player protect the API budget.
 - **Players attack this sandbox only.** The workshop never teaches attacks against real third-party systems.
-- **API keys stay in `.env`**, which is git-ignored.
-
----
-
-## GitHub setup
-
-The project is managed with the GitHub CLI (`gh`). The repository is public at `Chandukasireddy/Agent_Guardrails_Monitoring`.
-
-```bash
-gh auth status
-gh repo clone Chandukasireddy/Agent_Guardrails_Monitoring
-gh issue create --title "Level 3 bypass found" --body "Steps to reproduce..."
-gh pr create --fill
-```
-
-Branch names:
-
-- `main` is always playable.
-- `level/<number>-<name>` for new levels, for example `level/13-indirect-injection`.
-- `rail/<name>` for new guardrails.
-- `workshop/<date>` for content tied to a specific Sunday.
-
----
-
-## Roadmap
-
-- [x] Levels 0–12 playable end to end, including human approval and the negotiation bonus
-- [x] Live pipeline view, tripwire meter, trace viewer, scoreboard, host panel, attack bingo
-- [x] Claude, Ollama, and offline mock guards
-- [x] Langfuse tracing, NeMo Guardrails adapter, CrewAI crews (optional extras)
-- [x] One-click setup on Windows, macOS, and Linux; Docker
-- [ ] An indirect prompt-injection level (a document with hidden instructions)
-- [ ] Slides for each Sunday (Slidev)
-- [ ] Recorded walkthrough and write-up
+- **Never put real keys or personal data** in `sandbox/`, in `challenges/`, or in a commit. Real keys go in `.env`, which is git-ignored.
+- **Security decisions belong in code**, not in prompts. That is the lesson of every challenge.
 
 ---
 
 ## License
 
-To be decided (MIT suggested for the code). All vault data is fake and for education only.
+See the repository. Licensed for workshop and educational use.
