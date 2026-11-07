@@ -6,5 +6,6 @@ input:
     explain: "Refuses any message that does not mention a returns-policy topic."
     params:
       topics: ["policy", "return", "refund", "shipping", "exchange", "warranty"]
+      not_typos: ["police", "shopping", "skipping", "sipping", "warrant", "change"]
 tool: []
 output: []

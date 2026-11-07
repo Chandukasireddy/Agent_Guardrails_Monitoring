@@ -93,6 +93,7 @@ input:
     explain: "Refuses any message that does not mention a returns-policy topic."
     params:
       topics: ["policy", "return", "refund", "shipping", "exchange", "warranty"]
+      not_typos: ["police", "shopping", "skipping", "sipping", "warrant", "change"]
 tool: []
 output: []
 ```
@@ -141,6 +142,8 @@ A file in `guardrails/custom/` that has a mistake is logged and skipped; the gam
 
 - **`topic_scope`** (`checks/topic.py`): looks at the words in the message. Simple on purpose.
   A question can pass if it uses an allowed word, even when it is off topic.
+  Typos count as a match: `fuzzy_cutoff` sets how close a word must be (1 turns this off), and
+  `not_typos` lists real words that look like typos of a topic, such as "police" for "policy".
 - **`injection_heuristic`** (`checks/injection.py`): a list of regular expressions. It matches phrases,
   not intent, so a roleplay with the same request can pass.
 - **`pressure_detector`** (`checks/pressure.py`): counts pressure patterns. The `threshold` setting says how many must match.
